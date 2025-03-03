@@ -7,7 +7,7 @@ import (
 
 type config struct {
     maxPages            int
-    timeOut             int
+    timeout             int
     pages               map[string]int
     baseURL             *url.URL
     mu                  *sync.Mutex

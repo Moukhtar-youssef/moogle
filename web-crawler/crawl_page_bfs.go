@@ -80,10 +80,10 @@ func (cfg* config) crawlPageBFS() {
                     fmt.Printf("\tQueue is full, skipping link: %s\n", rawCurrentLink)
                 }
             }
-        case <-time.After(time.Duration(cfg.timeOut) * time.Second):
+        case <-time.After(time.Duration(cfg.timeout) * time.Second):
             // Check if the queue is empty
             if len(cfg.queue) == 0 {
-                fmt.Printf("\tQueue is empty after %v seconds, stopping worker...\n", cfg.timeOut)
+                fmt.Printf("\tQueue is empty after %v seconds, stopping worker...\n", cfg.timeout)
                 return
             }
         }
