@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import(
     "strings"
@@ -8,7 +8,14 @@ import(
     "golang.org/x/net/html"
 )
 
-func getURLsFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
+// FIXME: Test this function carefully
+func getURLsFromHTML(htmlBody string, rawURL string) ([]string, error) {
+    baseURL, err := url.Parse(rawURL)
+    if err != nil {
+        // Couldn't parse baseURL
+        return nil, err
+    }
+
     node, err := html.Parse(strings.NewReader(htmlBody))
     if err != nil {
         return nil, err
