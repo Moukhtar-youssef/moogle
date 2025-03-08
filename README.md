@@ -5,6 +5,13 @@
 - [ ] Add authentication to the DB
 - [ ] Try deploying the database making docker images of this
 
+## Components
+
+- [x] Crawler
+- [x] Indexer
+- [ ] Search engine
+- [ ] Frontend
+
 If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
 
 sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest

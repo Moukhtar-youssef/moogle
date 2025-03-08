@@ -24,7 +24,7 @@ func (crawcfg *CrawlerConfig) Crawl(rdb *redis.Client, ctx *context.Context) {
         }
 
         // Get the next URL from the queue
-        result, err := rdb.BLPop(*ctx, time.Duration(crawcfg.Timeout) * time.Second, crawcfg.QueueKey).Result()
+        result, err := rdb.BRPop(*ctx, time.Duration(crawcfg.Timeout) * time.Second, crawcfg.QueueKey).Result()
         if err != nil {
             log.Printf("No more URLs in the queue: %v\n", err)
             return

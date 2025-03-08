@@ -58,7 +58,6 @@ func populateCachedPages(rdb *redis.Client, ctx context.Context) map[string]*pag
 
 
 func main() {
-
     // Connect to redis
     rdb, err := newClient()
     if err != nil {
@@ -68,7 +67,7 @@ func main() {
     // Get context background
     ctx := context.Background()
 
-    parsedURL, err := url.Parse("https://wagslane.dev")
+    parsedURL, err := url.Parse("https://en.wikipedia.org/wiki/Anime")
     if err != nil {
         log.Printf("Error parsing URL: %w", err)
     }
@@ -78,7 +77,7 @@ func main() {
         Mu:             &sync.Mutex{},
         Wg:             &sync.WaitGroup{},
         Pages:          make(map[string]*pages.Page),
-        MaxPages:       20,
+        MaxPages:       100,
         Timeout:        5,
         MaxConcurrency: 10,
         QueueKey:       "url_queue",
@@ -114,8 +113,6 @@ func main() {
             // If the entry doesn't exist
             if _, exists := crawler.CachedPages[page.NormalizedURL]; !exists {
                 // Hash the structs
-
-                // Store it in Redis
                 pageHash, err := pages.HashPage(page)
                 if err != nil {
                     log.Printf("Error hasing page: %w", err)
@@ -126,6 +123,9 @@ func main() {
                 if err != nil {
                     log.Printf("Error storing data in redis: %w", err)
                 }
+
+                // FIXME: Check if this works
+                rdb.LPush(ctx, "indexer_queue", "page:"+page.NormalizedURL)
             }
         }
         log.Printf("DB updated!\n")
