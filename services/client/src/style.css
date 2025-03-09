@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+.main-container {
+    @apply flex flex-col items-center justify-center min-h-100 gap-y-4;
+}
+
+.logo-container {
+    @apply text-7xl mb-5 text-red-400;
+}
+
+.button-container {
+    @apply flex gap-x-2;
+}
+
+.btn {
+    @apply border border-gray-400 py-2 px-2 bg-slate-300 rounded shadow;
+}
+
+.btn:hover {
+    @apply bg-slate-400;
+}
+
+.btn:active {
+    @apply bg-slate-500;
+}
+
+#search-bar {
+    @apply border border-gray-400 rounded-md w-140;
+}
+
+footer {
+    @apply mt-auto py-4 text-center text-sm w-full;
+}
+
+footer p {
+    @apply text-sm;
+}
+
+footer a {
+    @apply text-red-500 hover:underline;
+}
+
+#copyright {
+    @apply text-xs mt-5;
+}
+
