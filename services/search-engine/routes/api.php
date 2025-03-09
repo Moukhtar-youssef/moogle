@@ -4,9 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WordController;
 
-/*Route::get('/user', function (Request $request) {*/
-/*    return $request->user();*/
-/*})->middleware('auth:sanctum');*/
-
-Route::get('/get/{key}', [WordController::class, 'getWord']);
+Route::get('/words/{key}', [WordController::class, 'getWord']);
+Route::get('/search', [WordController::class, 'search']);
 
