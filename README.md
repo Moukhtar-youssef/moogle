@@ -2,6 +2,11 @@
 
 # TODO:
 
+- [ ] Process text more efficiently so summary text is more readable
+- [ ] Update metadata struct in the DB
+    - [ ] include url
+    - [ ] Store <h1>s
+- [ ] Update search-engine to use pipelines
 - [ ] Add authentication to the DB
 - [ ] Try deploying the database making docker images of this
 
@@ -10,6 +15,7 @@
 - [x] Crawler
 - [x] Indexer
 - [ ] Search engine
+- [ ] Query filter
 - [ ] Frontend
 
 If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
