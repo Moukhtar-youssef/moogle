@@ -9,6 +9,8 @@
 - [ ] Update search-engine to use pipelines
 - [ ] Add authentication to the DB
 - [ ] Try deploying the database making docker images of this
+- [ ] Load balancing
+- [ ] Implement query filter service
 
 ## Components
 
