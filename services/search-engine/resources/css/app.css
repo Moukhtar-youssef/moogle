@@ -10,3 +10,70 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+.main-container {
+    @apply flex flex-col items-start justify-start min-h-100 min-w-100 gap-y-4;
+}
+
+.search-container{
+    @apply flex flex-row items-end bg-slate-200 p-5 max-w-full;
+}
+
+.logo-container {
+    @apply text-7xl mb-5 text-red-400;
+}
+
+.button-container {
+    @apply flex gap-x-2;
+}
+
+.btn {
+    @apply border border-gray-400 py-2 px-2 bg-slate-300 m-5 text-sm rounded shadow;
+}
+
+.btn:hover {
+    @apply bg-slate-400;
+}
+
+.btn:active {
+    @apply bg-slate-500;
+}
+
+#search-bar {
+    @apply border border-gray-400 rounded-md w-140 m-5 h-5;
+}
+
+footer {
+    @apply mt-auto py-4 text-center text-sm w-full;
+}
+
+footer p {
+    @apply text-sm;
+}
+
+footer a {
+    @apply text-red-500 hover:underline;
+}
+
+#copyright {
+    @apply text-xs mt-5;
+}
+
+.results-container {
+    @apply m-5;
+}
+
+.result-container {
+    @apply mb-5 mt-5;
+}
+.result-title {
+    @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600 text-lg;
+}
+
+.result-text {
+    @apply text-sm;
+}
+
+.result-url {
+    @apply text-sm text-green-600;
+}

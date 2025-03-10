@@ -21,6 +21,7 @@ class WordController extends Controller
     public function search()
     {
         $query = request()->query('q');
+        error_log("Query: $query");
         if (!$query) {
             return response()->json(['error' => 'No query provided'], 400);
         }
@@ -50,25 +51,25 @@ class WordController extends Controller
         }
 
         // Rank pages
-        foreach($wordResults as $word) {
-            foreach($word as $url => $score) {
+        foreach ($wordResults as $word) {
+            foreach ($word as $url => $score) {
                 // Initialize hashmap entry if it doesn't exist
                 if (!isset($wordHashmap[$url])) {
                     $wordHashmap[$url] = [
-                        "count" => 0,
-                        "score" => 0,
+                        'count' => 0,
+                        'score' => 0,
                     ];
                 }
 
                 // Update count and score
-                $wordHashmap[$url]["count"] += 1;
-                $wordHashmap[$url]["score"] += $score;
+                $wordHashmap[$url]['count'] += 1;
+                $wordHashmap[$url]['score'] += $score;
             }
         }
 
         // Sort the results to rank them
-        $sortedWordResults = collect($wordHashmap)->sortByDesc(function($value, $key) {
-            return ($value['count'] * 1000) + $value['score'];
+        $sortedWordResults = collect($wordHashmap)->sortByDesc(function ($value, $key) {
+            return $value['count'] * 1000 + $value['score'];
         });
 
         // Initialize empty hashmap
@@ -103,9 +104,11 @@ class WordController extends Controller
         /*}*/
 
         $counter = 0;
-        foreach($sortedWordResults as $url => $data) {
+        foreach ($sortedWordResults as $url => $data) {
             // TODO: Configure how to check for max results
-            if ($counter >= 50) break;
+            if ($counter >= 50) {
+                break;
+            }
             $counter += 1;
 
             // Fetch metadata
@@ -113,7 +116,6 @@ class WordController extends Controller
             if (!$resp) {
                 /*error_log("url_metadata:$url not found");*/
                 continue;
-
             }
 
             $title = $resp['title'];
@@ -122,13 +124,17 @@ class WordController extends Controller
 
             // Create metadata entry
             $urlMetadataHashmap[$url] = [
-                "title" => $title,
-                "description" => $description,
-                "text" => $text,
+                'title' => $title,
+                'description' => $description,
+                'text' => $text,
             ];
         }
 
-        return response()->json(['response' => $urlMetadataHashmap], 200);
+        // FIXME: Return a view for SSR
+        // return response()->json(['response' => $urlMetadataHashmap], 200);
+        return view('search-results', [
+            'query' => $query,
+            'results' => $urlMetadataHashmap,
+        ]);
     }
 }
-
