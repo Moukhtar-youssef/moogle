@@ -34,6 +34,7 @@ if __name__ == "__main__":
             logger.warning(f'Could not fetch {page_id}. Skipping...')
             continue
 
+        # FIXME: I have deactivated this to test something
         # Check if the page has been crawled before
         old_metadata_id = f'url_metadata:{page.normalized_url}'
         old_metadata = redis.get_metadata(old_metadata_id)
@@ -60,6 +61,7 @@ if __name__ == "__main__":
         logger.info(f'Storing words from {page_id} in Redis...')
         # Make a dictionary with the words in the text and their frequency
         words_weight = {}
+
         for word in text:
             words_weight[word] = words_weight.get(word, 0) + 1
 

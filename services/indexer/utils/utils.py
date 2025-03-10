@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
+import re
+
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('punkt_tab')
@@ -55,10 +57,25 @@ def get_html_data(html: str):
     description = get_meta_content(soup, property_value='og:description', name_value='description')
     canonical_url = get_meta_content(soup, property_value='og:url', name_value='url')
 
+    page_text = ""
+    paragraphs = soup.find_all('p')
+    for p in paragraphs:
+        page_text += re.sub(r'\[.*?\]', '', p.getText()).strip()
+
+    # Summary text
+    # Take first 500 words
+    summary_text = page_text.split()
+    summary_text = " ".join(summary_text) if len(summary_text) < 500 else " ".join(summary_text[:500])
+    # print(f'Summary text: {summary_text}')
+
+    # Processed text should remove all thet ",' for now
     # Process text
-    text = process_text(soup)
-    filtered_text = text['filtered_text']
-    summary_text = text['summary_text']
+    filtered_text = word_tokenize(page_text)
+
+    # Check that we don't have any stop words or punctuation
+    filtered_text = [word.lower() for word in filtered_text if word.lower() not in stop_words and word.lower().isalnum()]
+
+    # print(f'Filtered text: {filtered_text}')
 
     return {
         'title': title,
