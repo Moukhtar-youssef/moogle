@@ -8,7 +8,6 @@ This is the main actor involved in web crawling
 - [x] Add command line arguments for the config
 - [x] Store outlinks:url_key
 - [x] Normalize urls with fragmetnts (someurl.com/#some_fragment)
-- [ ] Ignore pages that are not in english
 - [ ] Store command line arguments in the .env
 - [ ] Test for bugs
 - [ ] Check for newlines and returns in log.Printf
