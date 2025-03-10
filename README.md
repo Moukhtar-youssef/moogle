@@ -2,10 +2,9 @@
 
 # TODO:
 
-- [ ] Process text more efficiently so summary text is more readable
+- [x] Process text more efficiently so summary text is more readable
 - [ ] Update metadata struct in the DB
     - [ ] include url
-    - [ ] Store <h1>s
 - [ ] Update search-engine to use pipelines
 - [ ] Add authentication to the DB
 - [ ] Try deploying the database making docker images of this
@@ -19,6 +18,9 @@
 - [ ] Add "more than x amount of entries" at the begining of the client. Like when google said "Soon 2.5 million entries or something"
 - [ ] If I have time, adding images would be sick
 - [ ] Add favicon icons for preview
+- [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
+- [ ] Maybe omit pages that are not in english
+- [ ] Try to implement page rank algorithm. But I need to check for inner links or something...
 
 ## Components
 
@@ -27,6 +29,9 @@
 - [x] Search engine
 - [ ] Query filter
 - [x] Frontend
+
+
+    parsedURL, err := url.Parse("https://en.wikipedia.org/wiki/Mega_Man_X")
 
 If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
 
