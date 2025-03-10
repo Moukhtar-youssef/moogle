@@ -1,18 +1,18 @@
 package crawler
 
 import (
-    "net/url"
     "sync"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/links"
 )
 
 // When the pages reaches a length of maxPages, stop the cycle, fetch/write data, and start again
 type CrawlerConfig struct {
-    StartURL            *url.URL            // Where to start crawling
     Mu                  *sync.Mutex         // Sync
     Wg                  *sync.WaitGroup     // Sync
     Pages               map[string]*pages.Page// Discovered pages
+    Outlinks            map[string]*links.Outlinks// Discovered outlinks
     MaxPages            int                 // Max discovered pages
     Timeout             int                 // Timeout in seconds
     MaxConcurrency      int                 // Maximum concurrent workers in the pool
@@ -57,7 +57,7 @@ func (crawcfg *CrawlerConfig) canVisitPage(normalizedURL string) (bool) {
     return true
 }
 
-func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page) (bool) {
+func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page, outlinks *links.Outlinks) (bool) {
     crawcfg.Mu.Lock()
     defer crawcfg.Mu.Unlock()
 
@@ -78,6 +78,7 @@ func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page) (bool) {
     }
 
     crawcfg.Pages[normalizedURL] = page
+    crawcfg.Outlinks[normalizedURL] = outlinks
     return true
 }
 

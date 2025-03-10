@@ -2,16 +2,16 @@ package crawler
 
 import (
     "log"
-    "context"
     "time"
 
-    "github.com/redis/go-redis/v9"
     "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/database"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/links"
 )
 
 // BFS crawling
-func (crawcfg *CrawlerConfig) Crawl(rdb *redis.Client, ctx *context.Context) {
+func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
     // Starting a new webcrawler instance
     defer crawcfg.Wg.Done()
 
@@ -24,7 +24,8 @@ func (crawcfg *CrawlerConfig) Crawl(rdb *redis.Client, ctx *context.Context) {
         }
 
         // Get the next URL from the queue
-        result, err := rdb.BRPop(*ctx, time.Duration(crawcfg.Timeout) * time.Second, crawcfg.QueueKey).Result()
+        log.Printf("Waiting for message queue...\n")
+        result, err := db.Client.BRPop(db.Context, time.Duration(crawcfg.Timeout) * time.Second, crawcfg.QueueKey).Result()
         if err != nil {
             log.Printf("No more URLs in the queue: %v\n", err)
             return
@@ -59,29 +60,26 @@ func (crawcfg *CrawlerConfig) Crawl(rdb *redis.Client, ctx *context.Context) {
 
         // Fetch the links of the current page
         // Change the cfg.BaseURL I don't get it but I need to change it
-        links, err := getURLsFromHTML(html, rawCurrentURL)
+        outgoingLinks, err := getURLsFromHTML(html, rawCurrentURL)
         if err != nil {
             log.Printf("Error getting links from HTML: %v\n", err)
             continue
         }
 
         // Create Page struct
-        // NOTE: I'll add the data to redis in batches, so not here
-        pg := pages.CreatePage(normalizedCurrentURL, html, contentType, links, statusCode)
-        // log.Printf("Page Data:\n%v\n", pg)
+        pg := pages.CreatePage(normalizedCurrentURL, html, contentType, statusCode)
+        ol := links.CreateOutlinks(normalizedCurrentURL, outgoingLinks)
 
-        // log.Printf("\n\nAdding %v when there is %d elements\n\n", normalizedCurrentURL, crawcfg.lenPages())
         // Add page visit
-        if !crawcfg.addPageVisit(pg) {
+        if !crawcfg.addPageVisit(pg, ol) {
             log.Printf("Error adding page visit\n")
             continue
         }
 
         log.Printf("Adding links from %v (%v)...\n", normalizedCurrentURL, rawCurrentURL)
-        // Add links to queue
-        for _, rawCurrentLink := range links {
-            // log.Printf("Adding %v to the queue\n", rawCurrentLink)
-            rdb.LPush(*ctx, crawcfg.QueueKey, rawCurrentLink)
+        // Add links to url queue
+        for _, rawCurrentLink := range outgoingLinks {
+            db.Client.LPush(db.Context, crawcfg.QueueKey, rawCurrentLink)
         }
     }
 }

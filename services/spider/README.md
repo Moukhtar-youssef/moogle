@@ -4,5 +4,11 @@ This is the main actor involved in web crawling
 
 ## TODO
 
-- [ ] Fix command line arguments (Maybe I can start by fetching an entry from the queue)
+- [x] Fetch entries from the queue when the program starts
+- [x] Add command line arguments for the config
+- [x] Store outlinks:url_key
+- [x] Normalize urls with fragmetnts (someurl.com/#some_fragment)
+- [ ] Ignore pages that are not in english
+- [ ] Store command line arguments in the .env
 - [ ] Test for bugs
+- [ ] Check for newlines and returns in log.Printf

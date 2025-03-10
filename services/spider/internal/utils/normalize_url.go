@@ -24,13 +24,5 @@ func NormalizeURL(rawURL string) (string, error) {
         normalizedURL += trimmedPath
     }
 
-    if u.RawQuery != "" {
-        normalizedURL += "?" + u.RawQuery
-    }
-
-    if u.Fragment != "" {
-        normalizedURL += "#" + u.Fragment
-    }
-
     return normalizedURL, nil
 }
