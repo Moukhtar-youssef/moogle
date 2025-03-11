@@ -3,6 +3,7 @@ package database
 import(
     "log"
     "context"
+    "fmt"
 
     "github.com/redis/go-redis/v9"
 )
@@ -12,7 +13,7 @@ type Database struct {
     Context     context.Context
 }
 
-func (db *Database) ConnectToRedis() {
+func (db *Database) ConnectToRedis() error {
     log.Println("Connecting to Redis...")
 
     db.Client = redis.NewClient(&redis.Options{
@@ -27,8 +28,10 @@ func (db *Database) ConnectToRedis() {
     _, err := db.Client.Ping(db.Context).Result()
     if err != nil {
         log.Printf("Error connecting to redis: %v", err)
+        return fmt.Errorf("Error connecting to redis: %v", err)
     }
 
     log.Println("Successfully connected to Redis!")
+    return nil
 }
 

@@ -34,7 +34,6 @@ if __name__ == "__main__":
             logger.warning(f'Could not fetch {page_id}. Skipping...')
             continue
 
-        # FIXME: I have deactivated this to test something
         # Check if the page has been crawled before
         old_metadata_id = f'url_metadata:{page.normalized_url}'
         old_metadata = redis.get_metadata(old_metadata_id)
@@ -47,6 +46,11 @@ if __name__ == "__main__":
         html_data = get_html_data(page.html)
         if not html_data:
             logger.error(f'Could not parse html data for {page_id}. Skipping...')
+            continue
+
+        # TODO: This may fail sometimes
+        if html_data['language'] != 'en':
+            logger.info(f'{page_id} not english. Skipping...')
             continue
 
         logger.info(f'Storing metadata for {page_id} in Redis...')

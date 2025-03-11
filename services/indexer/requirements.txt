@@ -1,2 +1,3 @@
 redis
 beautifulsoup4
+py3langid

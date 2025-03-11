@@ -76,6 +76,7 @@ class RedisClient:
             'description': description if description else '',
             'summary_text': text if text else '',
             'last_crawled': last_crawled if last_crawled else '',
+            'normalized_url': url
         }
 
         self.client.hset(key, mapping=metadata)

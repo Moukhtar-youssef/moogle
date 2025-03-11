@@ -6,6 +6,10 @@ import (
     "fmt"
 )
 
+func IsValidURL(link string) bool {
+    return !strings.Contains(link, "%")
+}
+
 func NormalizeURL(rawURL string) (string, error) {
     u, err := url.Parse(rawURL)
 

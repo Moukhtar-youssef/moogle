@@ -24,8 +24,11 @@ func main() {
 
     // Connect to Redis
     db := &database.Database{}
-    db.ConnectToRedis()
-    log.Printf("Database: %v\n", db)
+    err := db.ConnectToRedis()
+    if err != nil {
+        log.Printf("Error: Couldn't connect to Redis: %v\n", err)
+        return
+    }
 
     // Instantiate controllers
     pageController := controllers.NewPageController(db)

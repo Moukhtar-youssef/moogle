@@ -1,6 +1,7 @@
 import re
 import nltk
 import string
+import py3langid as langid
 
 from bs4 import BeautifulSoup
 
@@ -33,7 +34,6 @@ def process_text(soup):
     unfiltered_text = re.sub(r'\s+', ' ', unfiltered_text)    # Remove trailing spaces
     unfiltered_text.strip()                        # Remove extra spaces
 
-    # FIXME: Check summary text for important parts?
     # Get the summary_text
     summary_text = unfiltered_text
 
@@ -43,9 +43,11 @@ def process_text(soup):
     # Check that we don't have any stop words or punctuation
     filtered_text = [word.lower() for word in filtered_text if word.lower() not in stop_words and word.lower().isalnum()]
 
+    # TODO: Return language as well
     return {
         'summary_text': summary_text,
-        'filtered_text': filtered_text
+        'filtered_text': filtered_text,
+        # RETURN LANGUAGE HERE
     }
 
 def get_html_data(html: str):
@@ -77,10 +79,13 @@ def get_html_data(html: str):
 
     # print(f'Filtered text: {filtered_text}')
 
+    language, confidence = langid.classify(summary_text)
+
     return {
         'title': title,
         'description': description,
         'summary_text': summary_text,
         'text': filtered_text,
+        'language': language
     }
 

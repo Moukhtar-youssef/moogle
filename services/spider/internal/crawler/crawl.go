@@ -3,11 +3,12 @@ package crawler
 import (
     "log"
     "time"
+    "fmt"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
-    "github.com/IonelPopJara/search-engine/services/spider/internal/database"
     "github.com/IonelPopJara/search-engine/services/spider/internal/links"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/database"
 )
 
 // BFS crawling
@@ -64,6 +65,24 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
         if err != nil {
             log.Printf("Error getting links from HTML: %v\n", err)
             continue
+        }
+
+        // FIXME: Make this a controller like the other one (I'm too lazy now)
+        fmt.Printf("Creating backlinks...\n")
+        for _, link := range outgoingLinks {
+            if utils.IsValidURL(link) {
+                // normalize url
+                normalizedOutgoingURL, err := utils.NormalizeURL(link)
+                if err != nil {
+                    continue
+                }
+
+                if normalizedOutgoingURL == normalizedCurrentURL {
+                    continue
+                }
+                // fmt.Printf("backlinks:%v = {%v}\n", normalizedOutgoingURL, normalizedCurrentURL)
+                db.Client.SAdd(db.Context, "backlinks:"+normalizedOutgoingURL, normalizedCurrentURL)
+            }
         }
 
         // Create Page struct

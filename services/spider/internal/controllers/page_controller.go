@@ -76,6 +76,7 @@ func (pgc *PageController) SavePages(crawcfg *crawler.CrawlerConfig) {
             pageHash, err := pages.HashPage(page)
             if err != nil {
                 log.Printf("Error hashing page %s: %v", page.NormalizedURL, err)
+                continue
             }
 
             // Append command to pipeline

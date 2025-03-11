@@ -7,17 +7,6 @@ use Illuminate\Support\Facades\Redis;
 
 class WordController extends Controller
 {
-    public function getWord($key)
-    {
-        error_log("word:$key");
-        $value = Redis::zrevrange("word:$key", 0, -1, true);
-        if ($value) {
-            return response()->json(['value' => $value], 200);
-        }
-
-        return response()->json(['error' => 'Key not found'], 404);
-    }
-
     public function search()
     {
         $query = request()->query('q');
@@ -25,8 +14,6 @@ class WordController extends Controller
         if (!$query) {
             return response()->json(['error' => 'No query provided'], 400);
         }
-
-        /*error_log('Searching for words:');*/
 
         // Initialize empty hashmap
         // hashmap[url] = [
@@ -38,7 +25,7 @@ class WordController extends Controller
         // Split the query string
         $words = explode(' ', strtolower($query));
 
-        // Create a batch redis calls
+        // Create a pipline to fetch words from the query
         $pipeline = Redis::pipeline();
         foreach ($words as $word) {
             $pipeline->zrevrange("word:$word", 0, -1, true);
@@ -49,6 +36,9 @@ class WordController extends Controller
         if (!$wordResults) {
             return response()->json(['error' => 'No word results'], 404);
         }
+
+        $pipeline = Redis::pipeline();
+        $urlKeys = [];
 
         // Rank pages
         foreach ($wordResults as $word) {
@@ -61,15 +51,28 @@ class WordController extends Controller
                     ];
                 }
 
+                $pipeline->smembers("backlinks:$url");
+                $urlKeys[] = $url;
+
+                // TODO: Implement page rank here
                 // Update count and score
                 $wordHashmap[$url]['count'] += 1;
                 $wordHashmap[$url]['score'] += $score;
+                $wordHashmap[$url]['rank'] = 0; // Placeholder for backlinks
             }
+        }
+
+        $backlinksResults = $pipeline->exec();
+        foreach ($backlinksResults as $index => $backlinks) {
+            $url = $urlKeys[$index];
+            $total = count($backlinks);
+            $wordHashmap[$url]['rank'] = $total;
+            /*error_log("Page $url has $total backlinks");*/
         }
 
         // Sort the results to rank them
         $sortedWordResults = collect($wordHashmap)->sortByDesc(function ($value, $key) {
-            return $value['count'] * 1000 + $value['score'];
+            return $value['count'] * 1000 + 500 * $value['score'] + 300 * $value['rank'];
         });
 
         // Initialize empty hashmap
@@ -81,46 +84,22 @@ class WordController extends Controller
         $urlMetadataHashmap = [];
 
         // Fetch metadata to render the pages in the frontend
-        /*$counter = 0;*/
-
-        // FIXME: In order to implement the pipeline,
-        // I need to modify the metadata entry in the database
-        // to also include the url.
-        // Create another pipeline to fetch metadata in batches
-        /*$pipeline = Redis::pipeline();*/
-        /*foreach($sortedWordResults as $url => $data) {*/
-        /*    if ($counter >= 50) break;*/
-        /*    $counter += 1;*/
-        /*    $pipeline->hgetall("url_metadata:$url");*/
-        /*}*/
-        /**/
-        /*$urlMetadataResults = $pipeline->exec();*/
-        /*foreach($urlMetadataResults as $urlMetadata) {*/
-        /*    $title = $urlMetadata['title'];*/
-        /*    $description = $urlMetadata['description'];*/
-        /*    $text = $urlMetadata['text'];*/
-        /**/
-        /*    // Create urlMetadataHashmap entry*/
-        /*}*/
-
         $counter = 0;
-        foreach ($sortedWordResults as $url => $data) {
-            // TODO: Configure how to check for max results
-            if ($counter >= 50) {
-                break;
-            }
+
+        // Create another pipeline to fetch metadata in batches
+        $pipeline = Redis::pipeline();
+        foreach($sortedWordResults as $url => $data) {
+            if ($counter >= 50) break;
             $counter += 1;
+            $pipeline->hgetall("url_metadata:$url");
+        }
 
-            // Fetch metadata
-            $resp = Redis::hgetall("url_metadata:$url");
-            if (!$resp) {
-                /*error_log("url_metadata:$url not found");*/
-                continue;
-            }
-
-            $title = $resp['title'];
-            $description = $resp['description'];
-            $text = $resp['summary_text'];
+        $urlMetadataResults = $pipeline->exec();
+        foreach($urlMetadataResults as $urlMetadata) {
+            $title = $urlMetadata['title'];
+            $description = $urlMetadata['description'];
+            $text = $urlMetadata['summary_text'];
+            $url = $urlMetadata['normalized_url'];
 
             // Create metadata entry
             $urlMetadataHashmap[$url] = [
@@ -130,8 +109,7 @@ class WordController extends Controller
             ];
         }
 
-        // FIXME: Return a view for SSR
-        // return response()->json(['response' => $urlMetadataHashmap], 200);
+        // Return view for SSR
         return view('search-results', [
             'query' => $query,
             'results' => $urlMetadataHashmap,
