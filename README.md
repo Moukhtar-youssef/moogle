@@ -34,6 +34,7 @@
 - [ ] If I have time, adding images would be sick
 - [ ] Add favicon icons for preview
 - [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
+    - [ ] Just check all possible combintions like "mega-man" "megaman" "mega" "man"
 - [x] Maybe omit pages that are not in english
 - [ ] Try to implement page rank algorithm. But I need to check for inner links or something...
 
