@@ -2,6 +2,7 @@ import redis
 import logging
 from models.page import Page
 from models.metadata import Metadata
+from models.image import Image
 from email.utils import format_datetime
 from datetime import datetime
 import time
@@ -12,11 +13,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 class RedisClient:
-    def __init__(self, host='localhost', port=6379, decode_responses=True):
+    def __init__(self, host='localhost', port=6379, password="", db=0, decode_responses=True):
         try:
             self.client = redis.Redis(
                 host=host,
                 port=port,
+                password=password,
+                db = db,
                 decode_responses=decode_responses
             )
 
@@ -88,9 +91,35 @@ class RedisClient:
             logger.error(f'Redis connection not initialized')
             return None
 
-        # TODO: Read more about zadd
         key = f'word:{word}'
         self.client.zadd(key, {url: weight})
 
+    def get_page_images_urls(self, key: str) -> None:
+        page_images_urls = self.client.smembers(key)
+
+        return [url for url in page_images_urls]
+
+    def get_image(self, key: str):
+        image_hashed = self.client.hgetall(key)
+        return Image.from_hash(image_hashed)
+
+    def get_images_from_word(self, key:str):
+        return self.client.zrange(key, 0, -1, withscores=True)
+
+    def update_image(self, key: str, image) -> None:
+        image_hash = {
+            'page_url': image.page_url,
+            'alt':      image.alt,
+            'file_name':image.file_name
+        }
+        self.client.hset(key, mapping=image_hash)
+
+    def save_word_images(self, word: str, image_url: str, weight: int) -> None:
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return None
+
+        key = f'word_images:{word}'
+        self.client.zadd(key, {image_url: weight})
 
 
