@@ -34,6 +34,7 @@ jobs:
     - name: Indexer Placeholder
       run: echo "Indexer Placeholder!"
   build-and-push-docker-images:
+    needs: [test-spider, test-indexer]
     runs-on: ubuntu-latest
     permissions:
       contents: read
