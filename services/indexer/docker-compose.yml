@@ -1,0 +1,9 @@
+services:
+  indexer-service:
+    build: .
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+    deploy:
+      replicas: 1
+    restart: always
+
