@@ -89,3 +89,6 @@ I hate race conditions :(
 
 
 SILENE TEST DRIVEN DEVEVLOPER
+
+
+The main problem that docker solves is hte "It works on my machine"
