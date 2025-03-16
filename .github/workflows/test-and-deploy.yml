@@ -1,0 +1,21 @@
+name: Test and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build Spider Service
+      working-directory: ./services/spider
+      run: docker build -t spider-service .
+    - name: Build Indexer Service
+      working-directory: ./services/indexer
+      run: docker build -t indexer-service .
+    - name: Final Log
+      run: echo "Build Finished!"
