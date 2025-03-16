@@ -3,6 +3,7 @@ services:
     build: .
     environment:
       - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     deploy:
       replicas: 1
     restart: always

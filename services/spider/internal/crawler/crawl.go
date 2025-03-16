@@ -3,8 +3,6 @@ package crawler
 import (
     "log"
     "math"
-    // "time"
-    "fmt"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
@@ -93,10 +91,10 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
             // Check if the thing exists in the queue, and update weight
             score, exists := db.ExistsInQueue(rawCurrentLink)
             if exists {
-                // Already in queue so we update it's priority
-                fmt.Printf("\n--------------------( %v )---------------------------------------\n", score)
-                fmt.Printf("%v already in queue...\n", rawCurrentLink)
-                fmt.Printf("--------------------( %v )---------------------------------------\n\n", score - 1)
+                // // Already in queue so we update it's priority
+                // fmt.Printf("\n--------------------( %v )---------------------------------------\n", score)
+                // fmt.Printf("%v already in queue...\n", rawCurrentLink)
+                // fmt.Printf("--------------------( %v )---------------------------------------\n\n", score - 1)
                 score -= 0.001
                 // time.Sleep(1 * time.Second)
             } else {

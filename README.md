@@ -6,6 +6,8 @@
 - [x] Add images to indexer
 - [x] Ignore .svg and .ico
 - [x] Dockerize the indexer so it can be scaled
+- [x] Update metadata struct in the DB
+    - [x] include url
 - [x] Finish the monitoring service
 - [x] Clean up the codebase
     - [x] Remove environment variables from code
@@ -13,30 +15,27 @@
     - [x] Normalize urls before pushing
     - [x] Convert the queue to a set
     - [x] Use a priority queue based on weights and depth level
-- [ ] Set up building pipeline
-- [ ] Finish seting up the server
-- [ ] Setup github pipeline and pass db credentials as secrets
-
+- [x] Set up building pipeline
+- [x] Finish seting up the server
+- [x] Add authentication to the DB
+- [x] Remove cites because it produces duplicated content en.wikipedia.org/wiki/Anime#cite_ref-bbc_43-0o
+- [x] Check for pages encoding
+- [x] Omit pages that are not in english
 - [x] Process text more efficiently so summary text is more readable
-- [x] Update metadata struct in the DB
-    - [x] include url
+- [ ] Setup github pipeline and pass db credentials as secrets
+- [ ] If I have time, adding images would be sick
+
 - [x] Update search-engine to use pipelines
-- [ ] Add authentication to the DB
-- [ ] Try deploying the database making docker images of this
 - [ ] Load balancing
 - [ ] Implement query filter service
 - [ ] Handle weird queries like 'something+something' in the frontend
 - [ ] Fix the links not updating to purple
-- [x] Remove cites because it produces duplicated content en.wikipedia.org/wiki/Anime#cite_ref-bbc_43-0o
 - [ ] Add search suggeetsions based on most popular searches
-- [x] Check for pages encoding
 - [ ] Add "more than x amount of entries" at the begining of the client. Like when google said "Soon 2.5 million entries or something"
-- [ ] If I have time, adding images would be sick
-- [ ] Add favicon icons for preview
 - [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
     - [ ] Just check all possible combintions like "mega-man" "megaman" "mega" "man"
-- [x] Maybe omit pages that are not in english
 - [ ] Try to implement page rank algorithm. But I need to check for inner links or something...
+- [ ] Add favicon icons for preview
 
 ## Components
 

@@ -29,6 +29,8 @@ if __name__ == "__main__":
     redis_password = os.getenv('REDIS_PASSWORD', None)
     redis_db = int(os.getenv('REDIS_DB', 0))
 
+    print(f'Testing: {redis_host} | {redis_port} | {redis_password}')
+
     # Connect to redis
     logger.info('Initializing Redis...')
     redis = RedisClient(host=redis_host, port=redis_port, password=redis_password, db=redis_db)
