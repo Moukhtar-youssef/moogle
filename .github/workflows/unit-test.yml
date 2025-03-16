@@ -1,4 +1,4 @@
-name: Unit Test
+name: CI/CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  spider:
+  test-spider:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -21,5 +21,19 @@ jobs:
     - name: Test
       working-directory: ./services/spider
       run: go test -v ./...
-  # Add other services once I have tests for them
+  # Add unit-test for the other services once I have them
+  test-indexer:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Indexer Placeholder
+    run: echo "Indexer Placeholder!"
+  build-and-push-docker-spider:
+    runs-on: ubuntu-latest
+    needs: test-spider
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build Spider Service
+      working-directory: ./services/spider
+      run: docker build -t spider-service .
+
 

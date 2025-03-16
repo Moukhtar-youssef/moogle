@@ -20,6 +20,7 @@
 # Go
 go.work
 go.work.sum
+main
 
 # Python
 venv/
