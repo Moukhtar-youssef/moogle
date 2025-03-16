@@ -2,6 +2,21 @@
 
 # TODO:
 
+- [x] Make a monitoring service to scale crawlers dynamically
+- [x] Add images to indexer
+- [x] Ignore .svg and .ico
+- [x] Dockerize the indexer so it can be scaled
+- [x] Finish the monitoring service
+- [x] Clean up the codebase
+    - [x] Remove environment variables from code
+- [x] Fix crawler overhead
+    - [x] Normalize urls before pushing
+    - [x] Convert the queue to a set
+    - [x] Use a priority queue based on weights and depth level
+- [ ] Set up building pipeline
+- [ ] Finish seting up the server
+- [ ] Setup github pipeline and pass db credentials as secrets
+
 - [x] Process text more efficiently so summary text is more readable
 - [x] Update metadata struct in the DB
     - [x] include url
@@ -30,6 +45,13 @@
 - [ ] Query filter
 - [x] Frontend
 
+
+## Top Priority
+- [ ] Images
+- [ ] Make frontend prettier
+- [ ] Docker images
+- [ ] Scaling up/down
+- [ ] Load balancing
 
     parsedURL, err := url.Parse("https://en.wikipedia.org/wiki/Mega_Man_X")
 
@@ -64,3 +86,6 @@ sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stac
 sudo docker start redis-stack
 
 I hate race conditions :(
+
+
+SILENE TEST DRIVEN DEVEVLOPER
