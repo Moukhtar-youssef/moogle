@@ -70,4 +70,4 @@ jobs:
         run: docker build -t ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest .
 
       - name: Push Docker Image
-        run: docker push ${{ env.REGISTRY }:/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
+        run: docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
