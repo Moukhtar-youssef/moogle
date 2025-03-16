@@ -58,18 +58,67 @@ func TestGetURLsFromHTML(t *testing.T) {
             `,
             expected: []string{"https://example.com/valid-link", "https://valid.com/path"},
         },
+        {
+            name:     "remove duplicate links",
+            inputURL: "https://example.com",
+            inputBody: `
+            <html>
+                <body>
+                    <a href="/valid-link"><span>Valid</span></a>
+                    <a href="<invalid></a>"><span>Broken</span></a>
+                    <a href="https://valid.com/path"></a>
+                    <a href="/valid-link"><span>Valid</span></a>
+                    <a href="<invalid></a>"><span>Broken</span></a>
+                    <a href="https://valid.com/path"></a>
+                </body>
+            </html>
+            `,
+            expected: []string{"https://example.com/valid-link", "https://valid.com/path"},
+        },
+        {
+            name:     "ignore non-ASCII links",
+            inputURL: "https://example.com",
+            inputBody: `
+            <html>
+                <body>
+                    <a href="/valid-link"><span>Valid</span></a>
+                    <a href="https://valid.com/path"></a>
+                    <a href="https://пример.рф">Cyrillic</a>
+                    <a href="https://例子.com">Chinese</a>
+                    <a href="https://テスト.jp">Japanese</a>
+                    <a href="/another-valid"></a>
+                </body>
+            </html>
+            `,
+            expected: []string{
+                "https://example.com/valid-link",
+                "https://valid.com/path",
+                "https://example.com/another-valid",
+            },
+        },
     }
 
     for i, tc := range tests {
         t.Run(tc.name, func(t *testing.T) {
-            actual, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
+            actual, _, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
 
             if err != nil {
                 t.Errorf("Test %v - '%s' FAIL: unexpected error: %v", i, tc.name, err)
                 return
             }
 
-            result := reflect.DeepEqual(tc.expected, actual)
+            // Convert slices to sets for commparison
+            expectedSet := make(map[string]struct{})
+            for _, e := range tc.expected {
+                expectedSet[e] = struct{}{}
+            }
+
+            actualSet := make(map[string]struct{})
+            for _, e := range actual {
+                actualSet[e] = struct{}{}
+            }
+
+            result := reflect.DeepEqual(expectedSet, actualSet)
 
             if result == false {
                 t.Errorf("Test %v - %s FAIL: expected URL: %v, actual: %v", i, tc.name, tc.expected, actual)

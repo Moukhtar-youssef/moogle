@@ -2,12 +2,12 @@ package crawler
 
 import (
     "log"
-    "time"
+    "math"
+    // "time"
     "fmt"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
-    "github.com/IonelPopJara/search-engine/services/spider/internal/links"
     "github.com/IonelPopJara/search-engine/services/spider/internal/database"
 )
 
@@ -26,14 +26,13 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
 
         // Get the next URL from the queue
         log.Printf("Waiting for message queue...\n")
-        result, err := db.Client.BRPop(db.Context, time.Duration(crawcfg.Timeout) * time.Second, crawcfg.QueueKey).Result()
+        rawCurrentURL, depthLevel, err := db.PopURL()
         if err != nil {
             log.Printf("No more URLs in the queue: %v\n", err)
             return
         }
 
-        // Get current URL
-        rawCurrentURL := result[1]
+        log.Printf("\tURL '%v' has a depth level of %v\n", rawCurrentURL, depthLevel)
 
         // Normalize current URL
         normalizedCurrentURL, err := utils.NormalizeURL(rawCurrentURL)
@@ -49,7 +48,7 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
             continue
         }
 
-        log.Printf("Crawling from %v (%v)...\n", normalizedCurrentURL, rawCurrentURL)
+        log.Printf("\tCrawling from %v (%v)...\n", normalizedCurrentURL, rawCurrentURL)
 
         // Fetch HTML, Status Code, and Content-Type
         html, statusCode, contentType, err := getPageData(rawCurrentURL)
@@ -61,44 +60,58 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
 
         // Fetch the links of the current page
         // Change the cfg.BaseURL I don't get it but I need to change it
-        outgoingLinks, err := getURLsFromHTML(html, rawCurrentURL)
+        outgoingLinks, imagesMap, err := getURLsFromHTML(html, rawCurrentURL)
         if err != nil {
             log.Printf("Error getting links from HTML: %v\n", err)
             continue
         }
 
-        // FIXME: Make this a controller like the other one (I'm too lazy now)
-        fmt.Printf("Creating backlinks...\n")
-        for _, link := range outgoingLinks {
-            if utils.IsValidURL(link) {
-                // normalize url
-                normalizedOutgoingURL, err := utils.NormalizeURL(link)
-                if err != nil {
-                    continue
-                }
+        // Store images
+        crawcfg.AddImages(normalizedCurrentURL, imagesMap)
 
-                if normalizedOutgoingURL == normalizedCurrentURL {
-                    continue
-                }
-                // fmt.Printf("backlinks:%v = {%v}\n", normalizedOutgoingURL, normalizedCurrentURL)
-                db.Client.SAdd(db.Context, "backlinks:"+normalizedOutgoingURL, normalizedCurrentURL)
-            }
-        }
+        // Create outlinks and update backlinks
+        crawcfg.UpdateLinks(normalizedCurrentURL, outgoingLinks)
 
         // Create Page struct
         pg := pages.CreatePage(normalizedCurrentURL, html, contentType, statusCode)
-        ol := links.CreateOutlinks(normalizedCurrentURL, outgoingLinks)
 
         // Add page visit
-        if !crawcfg.addPageVisit(pg, ol) {
+        if !crawcfg.addPageVisit(pg) {
             log.Printf("Error adding page visit\n")
             continue
         }
 
-        log.Printf("Adding links from %v (%v)...\n", normalizedCurrentURL, rawCurrentURL)
+        log.Printf("\tAdding links from %v (%v)...\n", normalizedCurrentURL, rawCurrentURL)
         // Add links to url queue
         for _, rawCurrentLink := range outgoingLinks {
-            db.Client.LPush(db.Context, crawcfg.QueueKey, rawCurrentLink)
+            // Check if the url is valid
+            if !utils.IsValidURL(rawCurrentLink) {
+                // If it's not valid, process the next link
+                continue
+            }
+
+            // Check if the thing exists in the queue, and update weight
+            score, exists := db.ExistsInQueue(rawCurrentLink)
+            if exists {
+                // Already in queue so we update it's priority
+                fmt.Printf("\n--------------------( %v )---------------------------------------\n", score)
+                fmt.Printf("%v already in queue...\n", rawCurrentLink)
+                fmt.Printf("--------------------( %v )---------------------------------------\n\n", score - 1)
+                score -= 0.001
+                // time.Sleep(1 * time.Second)
+            } else {
+                score = depthLevel + 1
+            }
+
+            score = math.Max(utils.MinScore, math.Min(score, utils.MaxScore))
+
+            // Update score based on depth
+            err := db.PushURL(rawCurrentLink, score)
+            if err != nil {
+                log.Printf("Error pushing '%v' to the queue: %v\n", rawCurrentLink, err)
+                log.Printf("\tSkipping...")
+                continue
+            }
         }
     }
 }

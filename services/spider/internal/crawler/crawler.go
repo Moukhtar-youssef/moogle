@@ -3,8 +3,8 @@ package crawler
 import (
     "sync"
 
+    "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
-    "github.com/IonelPopJara/search-engine/services/spider/internal/links"
 )
 
 // When the pages reaches a length of maxPages, stop the cycle, fetch/write data, and start again
@@ -12,11 +12,11 @@ type CrawlerConfig struct {
     Mu                  *sync.Mutex         // Sync
     Wg                  *sync.WaitGroup     // Sync
     Pages               map[string]*pages.Page// Discovered pages
-    Outlinks            map[string]*links.Outlinks// Discovered outlinks
+    Outlinks            map[string]*pages.PageNode// Discovered outlinks
+    Backlinks           map[string]*pages.PageNode// Discovered backlinks
+    Images              map[string][]*pages.Image
     MaxPages            int                 // Max discovered pages
-    Timeout             int                 // Timeout in seconds
     MaxConcurrency      int                 // Maximum concurrent workers in the pool
-    QueueKey            string              // Redis queue key
     CachedPages         map[string]*pages.Page// All the db pages cached
 }
 
@@ -57,7 +57,7 @@ func (crawcfg *CrawlerConfig) canVisitPage(normalizedURL string) (bool) {
     return true
 }
 
-func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page, outlinks *links.Outlinks) (bool) {
+func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page) (bool) {
     crawcfg.Mu.Lock()
     defer crawcfg.Mu.Unlock()
 
@@ -78,7 +78,58 @@ func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page, outlinks *links.Out
     }
 
     crawcfg.Pages[normalizedURL] = page
-    crawcfg.Outlinks[normalizedURL] = outlinks
     return true
 }
+
+func (crawcfg *CrawlerConfig) UpdateLinks(normalizedCurrentURL string, outgoingLinks []string) {
+    crawcfg.Mu.Lock()
+    defer crawcfg.Mu.Unlock()
+
+    crawcfg.Outlinks[normalizedCurrentURL] = pages.CreatePageNode(normalizedCurrentURL)
+    for _, link := range outgoingLinks {
+        if utils.IsValidURL(link) {
+            // normalize url
+            normalizedOutgoingURL, err := utils.NormalizeURL(link)
+            if err != nil {
+                continue
+            }
+
+            if normalizedOutgoingURL == normalizedCurrentURL {
+                continue
+            }
+
+            // If the entry does not exist
+            if _, exists := crawcfg.Backlinks[normalizedOutgoingURL]; !exists {
+                crawcfg.Backlinks[normalizedOutgoingURL] = pages.CreatePageNode(normalizedOutgoingURL)
+            }
+
+            crawcfg.Backlinks[normalizedOutgoingURL].AppendLink(normalizedCurrentURL)
+            crawcfg.Outlinks[normalizedCurrentURL].AppendLink(normalizedOutgoingURL)
+        }
+    }
+}
+
+func (crawcfg* CrawlerConfig) AddImages(normalizedCurrentURL string, imagesMap map[string]map[string]string) {
+    // crawcfg.Mu.Lock()
+    // defer crawcfg.Mu.Unlock()
+
+    for imgURL, imgAttrs := range imagesMap {
+        imgAlt := ""
+        if alt, exists := imgAttrs["alt"]; exists {
+            imgAlt = alt
+        }
+
+        image := &pages.Image {
+            NormalizedPageURL:   normalizedCurrentURL,
+            NormalizedSourceURL: imgURL,
+            Alt:                 imgAlt,
+
+        }
+
+        crawcfg.Images[normalizedCurrentURL] = append(crawcfg.Images[normalizedCurrentURL], image)
+
+        // log.Printf("%v\n", image)
+    }
+}
+
 

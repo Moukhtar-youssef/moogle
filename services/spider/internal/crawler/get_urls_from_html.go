@@ -3,47 +3,58 @@ package crawler
 import(
     "strings"
     "net/url"
-    "fmt"
+    "regexp"
 
     "golang.org/x/net/html"
+
+    "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
 )
 
-// FIXME: Test this function carefully
-func getURLsFromHTML(htmlBody string, rawURL string) ([]string, error) {
+func getURLsFromHTML(htmlBody string, rawURL string) ([]string, map[string]map[string]string, error) {
     baseURL, err := url.Parse(rawURL)
     if err != nil {
         // Couldn't parse baseURL
-        return nil, err
+        return nil, nil, err
     }
 
     node, err := html.Parse(strings.NewReader(htmlBody))
     if err != nil {
-        return nil, err
+        return nil, nil, err
     }
 
-    links := traverse(node, baseURL)
+    linksSet := make(map[string]struct{})
+    imagesMap := make(map[string]map[string]string)
 
-    if links == nil {
-        return []string{}, nil
+    traverse(node, baseURL, linksSet, imagesMap)
+
+    // Convert set to slice
+    links := make([]string, 0, len(linksSet))
+    for link := range linksSet {
+        links = append(links, link)
     }
 
-    return links, nil
+    return links, imagesMap, nil
 }
 
-func traverse(node *html.Node, baseURL *url.URL) []string {
-    if node == nil {
-        return nil
-    }
+var nonASCIIRegex = regexp.MustCompile(`[^\x20-\x7E]`)
 
-    var links []string
+func traverse(node *html.Node, baseURL *url.URL, linksSet map[string]struct{}, imagesMap map[string]map[string]string) {
+    if node == nil {
+        return
+    }
 
     if node.Type == html.ElementNode && node.Data == "a" {
         for _, attr := range node.Attr {
             if attr.Key == "href" {
                 rawHref := attr.Val
 
+                // Skip malformed URLS
                 if strings.ContainsAny(rawHref, " <>\"") {
-                    fmt.Printf("Skipping malformed URL: %v\n", rawHref)
+                    continue
+                }
+
+                // Skip non-ASCII urls
+                if nonASCIIRegex.MatchString(rawHref) {
                     continue
                 }
 
@@ -54,7 +65,6 @@ func traverse(node *html.Node, baseURL *url.URL) []string {
                 }
 
                 var resolved string
-
                 if u.IsAbs() {
                     resolved = u.String()
                 } else {
@@ -63,15 +73,59 @@ func traverse(node *html.Node, baseURL *url.URL) []string {
                 }
 
                 // Append to list
-                links = append(links, resolved)
+                linksSet[resolved] = struct{}{}
             }
+        }
+    } else if node.Type == html.ElementNode && node.Data == "img" {
+        imageDetails := make(map[string]string)
+        for _, attr := range node.Attr {
+            if attr.Key == "src" {
+                rawSrc := attr.Val
+
+                // Skip malformed URLS
+                if strings.ContainsAny(rawSrc, " <>\"") {
+                    continue
+                }
+
+                // Skip non-ASCII urls
+                if nonASCIIRegex.MatchString(rawSrc) {
+                    continue
+                }
+
+                // Parse url and add to the list
+                u, err := url.Parse(attr.Val)
+                if err != nil {
+                    continue
+                }
+
+                var resolved string
+                if u.IsAbs() {
+                    resolved = u.String()
+                } else {
+                    resolved = baseURL.ResolveReference(u).String()
+
+                }
+
+                resolved, err = utils.NormalizeURL(resolved)
+                if err != nil {
+                    // Could not normalize image URL
+                    continue
+                }
+
+                imageDetails["src"] = resolved
+            } else if attr.Key == "alt" {
+                imageDetails["alt"] = attr.Val
+            }
+        }
+
+        if len(imageDetails) > 0 {
+            imgURL := imageDetails["src"]
+            imagesMap[imgURL] = imageDetails
         }
     }
 
     for c := node.FirstChild; c != nil; c = c.NextSibling {
-        links = append(links, traverse(c, baseURL)...)
+        traverse(c, baseURL, linksSet, imagesMap)
     }
-
-    return links
 }
 

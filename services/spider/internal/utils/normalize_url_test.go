@@ -38,6 +38,12 @@ func TestNormalizeURL(t *testing.T) {
             expected: "en.wikipedia.org/wiki/Mega_Man_X",
             wantErr: false,
         },
+        {
+            name: "remove www.",
+            inputURL: "https://www.mults.com/",
+            expected: "mults.com",
+            wantErr: false,
+        },
     }
 
     for i, tc := range tests {

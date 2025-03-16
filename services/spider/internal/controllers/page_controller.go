@@ -4,9 +4,10 @@ import(
     "log"
     "github.com/redis/go-redis/v9"
 
-    "github.com/IonelPopJara/search-engine/services/spider/internal/database"
-    "github.com/IonelPopJara/search-engine/services/spider/internal/crawler"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/crawler"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/database"
 )
 
 type PageController struct {
@@ -23,7 +24,7 @@ func (pgc *PageController) GetAllPages() map[string]*pages.Page {
     log.Printf("Fetching data from Redis...\n")
     redisPages := make(map[string]*pages.Page)
 
-    keys, err := pgc.db.Client.Keys(pgc.db.Context, "page:*").Result()
+    keys, err := pgc.db.Client.Keys(pgc.db.Context, utils.PagePrefix + ":*").Result()
     if err != nil {
         log.Printf("Error fetching data from Redis: %v\n", err)
         return nil
@@ -80,10 +81,10 @@ func (pgc *PageController) SavePages(crawcfg *crawler.CrawlerConfig) {
             }
 
             // Append command to pipeline
-            pipeline.HSet(pgc.db.Context, "page:"+page.NormalizedURL, pageHash)
+            pipeline.HSet(pgc.db.Context, utils.PagePrefix + ":"+page.NormalizedURL, pageHash)
 
             // Push to the indexer queue
-            pgc.db.Client.LPush(pgc.db.Context, "indexer_queue", "page:"+page.NormalizedURL)
+            pgc.db.Client.LPush(pgc.db.Context, "indexer_queue", utils.PagePrefix + ":" +page.NormalizedURL)
         } else {
             log.Printf("Skipping %v. Already crawled\n", page.NormalizedURL)
         }

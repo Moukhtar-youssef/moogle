@@ -6,10 +6,6 @@ import (
     "fmt"
 )
 
-func IsValidURL(link string) bool {
-    return !strings.Contains(link, "%")
-}
-
 func NormalizeURL(rawURL string) (string, error) {
     u, err := url.Parse(rawURL)
 
@@ -21,7 +17,12 @@ func NormalizeURL(rawURL string) (string, error) {
         return "", fmt.Errorf("URL has no field field 'Host'")
     }
 
-    normalizedURL := u.Host
+    host := u.Host
+    if strings.HasPrefix(host, "www.") {
+        host = host[4:]
+    }
+
+    normalizedURL := host
 
     if u.Path != "" {
         trimmedPath := strings.TrimSuffix(u.Path, "/")
