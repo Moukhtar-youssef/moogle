@@ -73,7 +73,7 @@ jobs:
 
       - name: Build Docker image for ${{ matrix.service }}
         working-directory: ./services/${{ matrix.service }}
-        run: docker build -t ${{ steps.meta.output.tags }} .
+        run: docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Push Docker image for ${{ matrix.service }}
-        run: docker push ${{ steps.meta.output.tags }}
+        run: docker push ${{ steps.meta.outputs.tags }}
