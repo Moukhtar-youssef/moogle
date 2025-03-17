@@ -64,9 +64,13 @@ jobs:
       #   with:
       #     images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      - name: Debug tag for $ {{ matrix.service }}
+        run : |
+          echo "Tag: ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest"
       - name: Build Docker image for ${{ matrix.service }}
         working-directory: ./services/${{ matrix.service }}
-        run: docker build -t ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/{{ matrix.service }}:latest .
+        run: |
+          docker build -t ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest .
 
       - name: Push Docker image for ${{ matrix.service }}
-        run: docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/{{ matrix.service }}:latest
+        run: docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest
