@@ -33,34 +33,47 @@ jobs:
     steps:
     - name: Indexer Placeholder
       run: echo "Indexer Placeholder!"
-build-and-push-docker-images:
-    needs: [test-spider, test-indexer]
+
+  build-and-push-docker-images:
+    # needs: [test-spider, test-indexer]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
 
+    strategy:
+      matrix:
+        service: [spider, indexer]
+      fail-fast: false
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Log into registry ${{ env.REGISTRY }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get commit SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
 
-      - name: Build and push Docker images
-        run: |
-          for service in spider indexer; do
-            IMAGE_NAME=${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')-$service
-            docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$sha_short ./services/$service
-            docker push $IMAGE_NAME:latest
-            docker push $IMAGE_NAME:$sha_short
-          done
+      - name: Build Docker image for ${{ matrix.service }}
+        working-directory: ./services/${{ matrix.service }}
+        run: docker build -t ${{ steps.meta.output.tags }} .
+
+      - name: Push Docker image for ${{ matrix.service }}
+        run: docker push ${{ steps.meta.output.tags }}
