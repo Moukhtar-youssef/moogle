@@ -88,6 +88,7 @@ jobs:
         working-directory: ./services/${{ matrix.service }}
           # docker build -t ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest .
         run: |
+          echo "Metadata: ${{ steps.meta.outputs.tags }}"
           docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Push Docker image for ${{ matrix.service }}
