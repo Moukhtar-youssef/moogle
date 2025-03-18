@@ -78,8 +78,8 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare artifacts folder
         uses: actions/checkout@v4
+      - name: Prepare artifacts folder
         run: |
           mkdir -p artifacts
           mkdir -p artifacts/spider
