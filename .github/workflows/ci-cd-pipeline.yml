@@ -84,12 +84,13 @@ jobs:
           name: ${{ matrix.service }}-docker-compose
           path: ./services/${{ matrix.service }}/docker-compose.yml
 
-  # deploy:
-  #   name: Deploy
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #       uses: actions/checkout@v4
-  #     - name: Prepare artifacts folder
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+        uses: actions/checkout@v4
+      - name: Prepare artifacts folder
+        run: echo "Hello World!"
   #       run: |
   #         mkdir -p artifacts
   #         mkdir -p artifacts/spider
