@@ -13,6 +13,13 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  testing-this-thing:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Testing
+      run: |
+        ls
+        echo "Hello"
   test-spider:
     runs-on: ubuntu-latest
     steps:
@@ -84,13 +91,6 @@ jobs:
           name: ${{ matrix.service }}-docker-compose
           path: ./services/${{ matrix.service }}/docker-compose.yml
 
-  testing-this-thing:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Testing
-      run: |
-        ls
-        echo "Hello"
   #       run: |
   #         mkdir -p artifacts
   #         mkdir -p artifacts/spider
