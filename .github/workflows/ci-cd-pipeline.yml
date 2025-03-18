@@ -21,6 +21,7 @@ jobs:
       image_name: ${{ github.repository }}
 
   upload-docker-compose-artifacts:
+    name: Upload Docker Compose Artifacts
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -36,7 +37,8 @@ jobs:
           name: ${{ matrix.service }}-docker-compose
           path: ./services/${{ matrix.service }}/docker-compose.yml
 
-  testing-this-thing:
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
     steps:
     - name: Testing
