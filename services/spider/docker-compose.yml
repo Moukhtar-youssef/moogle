@@ -1,9 +1,7 @@
 services:
   spider-service:
     image: ghcr.io/ionelpopjara/search-engine/spider:latest
-    environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file: "variables.env"
     deploy:
       replicas: 1
     restart: always

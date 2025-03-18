@@ -79,6 +79,9 @@ jobs:
         key:  ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
+          cp ~/variables.env ~/SearchEngine/Spider
+          cp ~/variables.env ~/SearchEngine/Indexer
+          cp ~/variables.env ~/SearchEngine/Monitoring
           mkdir -p ~/SearchEngine/Spider
           mkdir -p ~/SearchEngine/Indexer
           mkdir -p ~/SearchEngine/Monitoring
