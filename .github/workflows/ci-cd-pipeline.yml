@@ -84,13 +84,11 @@ jobs:
           name: ${{ matrix.service }}-docker-compose
           path: ./services/${{ matrix.service }}/docker-compose.yml
 
-  test-deploy:
+  testing-this-thing:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Test
-      run: echo "Hello World!"
+    - name: Testing
+      run: echo "Shit"
   #       run: |
   #         mkdir -p artifacts
   #         mkdir -p artifacts/spider
