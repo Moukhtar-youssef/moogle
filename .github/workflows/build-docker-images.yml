@@ -7,6 +7,10 @@ on:
         description: 'The Docker registry URL'
         required: true
         type: string
+      image_name:
+        description: 'The Docker image name'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -36,7 +40,7 @@ jobs:
       - name: Build Docker image for ${{ matrix.service }}
         working-directory: ./services/${{ matrix.service }}
         run: |
-          docker build -t ${{ inputs.registry }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest .
+          docker build -t ${{ inputs.registry }}/$(echo "${{ inputs.image_name }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest .
 
       - name: Push Docker image for ${{ matrix.service }}
-        run: docker push ${{ inputs.registry }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest
+        run: docker push ${{ inputs.registry }}/$(echo "${{ inputs.image_name }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest
