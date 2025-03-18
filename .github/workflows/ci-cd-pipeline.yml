@@ -88,7 +88,7 @@ jobs:
           rm artifacts -r
           cd Spider
           docker compose down
-          docker compose up --build -d
+          docker compose up --build
           cd ..
           cd Indexer
           docker compose down
