@@ -5,6 +5,7 @@ on:
 
 jobs:
   test-spider:
+    name: Test Spider Service
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -20,6 +21,7 @@ jobs:
       run: go test -v ./...
 
   test-indexer:
+    name: Test Spider Service
     runs-on: ubuntu-latest
     steps:
     - name: Indexer Placeholder
