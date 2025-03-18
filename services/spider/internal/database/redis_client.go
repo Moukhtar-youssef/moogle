@@ -17,6 +17,11 @@ type Database struct {
 }
 
 func (db *Database) ConnectToRedis(redisHost, redisPort, redisPassword, redisDB string) error {
+    log.Println("Connecting to Redis...")
+    log.Printf("\tRedis Host: '%s'\n", redisHost+":"+redisPort)
+    log.Printf("\tRedis Password: '%s'\n", redisPassword)
+    log.Printf("\tRedis DB: '%s'\n", redisDB)
+
     dbIndex, err := strconv.Atoi(redisDB)
     if err != nil {
         return fmt.Errorf("Could not parse DB value: %v\n", err)
