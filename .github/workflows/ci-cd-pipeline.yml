@@ -27,12 +27,14 @@ jobs:
     - name: Test
       working-directory: ./services/spider
       run: go test -v ./...
-  # Add unit-test for the other services once I have them
+
   test-indexer:
     runs-on: ubuntu-latest
     steps:
     - name: Indexer Placeholder
       run: echo "Indexer Placeholder!"
+  # Add unit-test for the other services once I have them
+  # Add building of the rust tool
 
   build-and-push-docker-images:
     # needs: [test-spider, test-indexer]
@@ -58,15 +60,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Extract Docker metadata
-      #   id: meta
-      #   uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
-      #   with:
-      #     images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      - name: Debug tag for ${{ matrix.service }}
-        run : |
-          echo "Tag: ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest"
       - name: Build Docker image for ${{ matrix.service }}
         working-directory: ./services/${{ matrix.service }}
         run: |
@@ -75,11 +68,36 @@ jobs:
       - name: Push Docker image for ${{ matrix.service }}
         run: docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest
 
+      - name: Upload artifact for ${{ matrix.service }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-docker-compose
+          path: ./services/${{ matrix.service }}/docker-compose.yml
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: SSH Remote Commands
+      - name: Prepare artifacts folder
+        uses: actions/checkout@v4
+        run: |
+          mkdir -p artifacts
+          mkdir -p artifacts/spider
+          mkdir -p artifacts/indexer
+          ls
+      - name: Download spider artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: spider-docker-compose
+          path: artifacts/spider
+      - name: Download indexer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: indexer-docker-compose
+          path: artifacts/indexer
+      - name: Debug directories
+        run: ls
+      - name: Prepare server directories
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -87,5 +105,18 @@ jobs:
           key:  ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            whoami
-            ls -al
+            pwd
+            ls -R
+            mkdir -p ~/SearchEngine/Spider
+            mkdir -p ~/SearchEngine/Indexer
+            mkdir -p ~/SearchEngine/Monitoring
+            ls -R
+      - name: Copy artifacts to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key:  ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "artifacts"
+          target: ~/SearchEngine
