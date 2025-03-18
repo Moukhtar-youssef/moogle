@@ -19,6 +19,8 @@ jobs:
 
   build-and-push-docker-images:
     uses: ./.github/workflows/build-docker-images.yml
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     # needs: [test-spider, test-indexer]
 
   upload-docker-compose-artifacts:
