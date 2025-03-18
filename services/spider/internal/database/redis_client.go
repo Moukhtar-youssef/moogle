@@ -17,7 +17,6 @@ type Database struct {
 }
 
 func (db *Database) ConnectToRedis(redisHost, redisPort, redisPassword, redisDB string) error {
-    log.Println("JUST TESTING THIS!\n")
     log.Println("Connecting to Redis...")
     log.Printf("\tRedis Host: '%s'\n", redisHost+":"+redisPort)
     log.Printf("\tRedis Password: '%s'\n", redisPassword)
@@ -38,7 +37,7 @@ func (db *Database) ConnectToRedis(redisHost, redisPort, redisPassword, redisDB 
 
     _, err = db.Client.Ping(db.Context).Result()
     if err != nil {
-        return fmt.Errorf("Couldn't connect to shit | %v | %v |: %v", redisHost, redisPassword, err)
+        return fmt.Errorf("Couldn't connect to redis: %v", err)
     }
 
     log.Println("Successfully connected to Redis!")
