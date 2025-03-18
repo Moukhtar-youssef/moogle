@@ -38,7 +38,7 @@ func (db *Database) ConnectToRedis(redisHost, redisPort, redisPassword, redisDB 
 
     _, err = db.Client.Ping(db.Context).Result()
     if err != nil {
-        return fmt.Errorf("Couldn't connect to redis: %v", err)
+        return fmt.Errorf("Couldn't connect to shit | %v | %v |: %v", redisHost, redisPassword, err)
     }
 
     log.Println("Successfully connected to Redis!")
