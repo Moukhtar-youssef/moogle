@@ -83,11 +83,9 @@ jobs:
           mkdir -p ~/SearchEngine/Indexer
           mkdir -p ~/SearchEngine/Monitoring
           cd ~/SearchEngine
-          pwd
-          mv spider/docker-compose.yml ./Spider/
-          mv indexer/docker-compose.yml ./Indexer/
-          rm spider indexer -r
-          ls -R
+          mv artifacts/spider/docker-compose.yml ./Spider/
+          mv artifacts/indexer/docker-compose.yml ./Indexer/
+          rm artifacts -r
           cd Spider
           docker compose down
           docker compose up --build -d
