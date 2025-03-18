@@ -62,20 +62,6 @@ jobs:
         path: artifacts/indexer
     - name: Debug contents
       run: ls artifacts -R
-    - name: Prepare server directories
-      uses: appleboy/ssh-action@v1.2.2
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key:  ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-          pwd
-          ls -R
-          mkdir -p ~/SearchEngine/Spider
-          mkdir -p ~/SearchEngine/Indexer
-          mkdir -p ~/SearchEngine/Monitoring
-          ls -R
     - name: Copy artifacts to server
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -83,5 +69,29 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key:  ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
-        source: "artifacts"
+        source: "artifacts/*" # Only copy the contents, not the folder
         target: ~/SearchEngine
+    - name: Fix directories and reboot server dependencies
+      uses: appleboy/ssh-action@v1.2.2
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key:  ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          mkdir -p ~/SearchEngine/Spider
+          mkdir -p ~/SearchEngine/Indexer
+          mkdir -p ~/SearchEngine/Monitoring
+          cd ~/SearchEngine
+          pwd
+          mv spider/docker-compose.yml ./Spider/
+          mv indexer/docker-compose.yml ./Indexer/
+          rm spider indexer -r
+          ls -R
+          cd Spider
+          docker compose down
+          docker compose up --build -d
+          cd ..
+          cd Indexer
+          docker compose down
+          docker compose up --build -d
