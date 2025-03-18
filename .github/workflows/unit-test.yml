@@ -1,0 +1,27 @@
+name: Unit Tests
+
+on:
+  workflow_call:
+
+jobs:
+  test-spider:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.0'
+    - name: Build
+      working-directory: ./services/spider
+      run: go build -v ./cmd/spider/main.go
+    - name: Test
+      working-directory: ./services/spider
+      run: go test -v ./...
+
+  test-indexer:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Indexer Placeholder
+      run: echo "Indexer Placeholder!"
+  # Add unit-test for the other services once I have them
