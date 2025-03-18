@@ -68,7 +68,17 @@ jobs:
       - name: Push Docker image for ${{ matrix.service }}
         run: docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}:latest
 
-      - name: Upload artifact for ${{ matrix.service }}
+  upload-docker-compose-artifacts:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [spider, indexer]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Upload ${{ matrix.service }} docker artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.service }}-docker-compose
