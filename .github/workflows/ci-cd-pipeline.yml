@@ -20,7 +20,7 @@ jobs:
   build-and-push-docker-images:
     uses: ./.github/workflows/build-docker-images.yml
     with:
-      registry: 'ghrc.io'
+      registry: 'ghcr.io'
     # needs: [test-spider, test-indexer]
 
   upload-docker-compose-artifacts:
