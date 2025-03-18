@@ -1,6 +1,6 @@
 services:
   spider-service:
-    build: .
+    image: ghcr.io/ionelpopjara/search-engine/spider:latest
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
