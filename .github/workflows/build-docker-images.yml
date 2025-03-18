@@ -7,9 +7,9 @@ on:
         required: false
         type: string
         default: 'ghrc.io'
-      secrets:
-        GITHUB_TOKEN:
-          required: true
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
 jobs:
   build:
