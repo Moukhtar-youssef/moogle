@@ -6,23 +6,19 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# env:
-#   # Use docker.io for Docker Hub if empty
-#   REGISTRY: ghcr.io
-#   # github.repository as <account>/<repo>
-#   IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   tests:
+    name: Unit Testing
     uses: ./.github/workflows/unit-test.yml
   # Add building of the rust tool
 
   build-and-push-docker-images:
+    name: Build Docker Images
+    needs: [tests]
     uses: ./.github/workflows/build-docker-images.yml
     with:
       registry: 'ghcr.io'
       image_name: ${{ github.repository }}
-    # needs: [test-spider, test-indexer]
 
   upload-docker-compose-artifacts:
     runs-on: ubuntu-latest
