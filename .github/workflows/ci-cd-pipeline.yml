@@ -74,49 +74,49 @@ jobs:
           name: ${{ matrix.service }}-docker-compose
           path: ./services/${{ matrix.service }}/docker-compose.yml
 
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    steps:
-        uses: actions/checkout@v4
-      - name: Prepare artifacts folder
-        run: |
-          mkdir -p artifacts
-          mkdir -p artifacts/spider
-          mkdir -p artifacts/indexer
-          ls
-      - name: Download spider artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: spider-docker-compose
-          path: artifacts/spider
-      - name: Download indexer artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: indexer-docker-compose
-          path: artifacts/indexer
-      - name: Debug directories
-        run: ls
-      - name: Prepare server directories
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key:  ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            pwd
-            ls -R
-            mkdir -p ~/SearchEngine/Spider
-            mkdir -p ~/SearchEngine/Indexer
-            mkdir -p ~/SearchEngine/Monitoring
-            ls -R
-      - name: Copy artifacts to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key:  ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: "artifacts"
-          target: ~/SearchEngine
+  # deploy:
+  #   name: Deploy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #       uses: actions/checkout@v4
+  #     - name: Prepare artifacts folder
+  #       run: |
+  #         mkdir -p artifacts
+  #         mkdir -p artifacts/spider
+  #         mkdir -p artifacts/indexer
+  #         ls
+  #     - name: Download spider artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: spider-docker-compose
+  #         path: artifacts/spider
+  #     - name: Download indexer artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: indexer-docker-compose
+  #         path: artifacts/indexer
+  #     - name: Debug directories
+  #       run: ls
+  #     - name: Prepare server directories
+  #       uses: appleboy/ssh-action@v1.2.2
+  #       with:
+  #         host: ${{ secrets.SSH_HOST }}
+  #         username: ${{ secrets.SSH_USER }}
+  #         key:  ${{ secrets.SSH_PRIVATE_KEY }}
+  #         port: ${{ secrets.SSH_PORT }}
+  #         script: |
+  #           pwd
+  #           ls -R
+  #           mkdir -p ~/SearchEngine/Spider
+  #           mkdir -p ~/SearchEngine/Indexer
+  #           mkdir -p ~/SearchEngine/Monitoring
+  #           ls -R
+  #     - name: Copy artifacts to server
+  #       uses: appleboy/scp-action@v0.1.7
+  #       with:
+  #         host: ${{ secrets.SSH_HOST }}
+  #         username: ${{ secrets.SSH_USER }}
+  #         key:  ${{ secrets.SSH_PRIVATE_KEY }}
+  #         port: ${{ secrets.SSH_PORT }}
+  #         source: "artifacts"
+  #         target: ~/SearchEngine
