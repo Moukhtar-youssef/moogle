@@ -2,14 +2,6 @@ name: Build and Push Docker Images
 
 on:
   workflow_call:
-    inputs:
-      registry:
-        required: false
-        type: string
-        default: 'ghrc.io'
-    secrets:
-      GITHUB_TOKEN:
-        required: true
 
 jobs:
   build:
