@@ -1,0 +1,7 @@
+services:
+  backlinks-processor-service:
+    build: .
+    env_file: "variables.env"
+    deploy:
+      replicas: 1
+
