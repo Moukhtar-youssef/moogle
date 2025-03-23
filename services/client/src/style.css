@@ -1,33 +1,74 @@
 @import "tailwindcss";
 
+:root {
+    --bg: #1f2335;
+    --text: #c0caf5;
+    --accent: #c53b53;
+    --button: #737aa2;
+    --buton-down: #414868;
+    --button-hover: #565f89;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
 .main-container {
     @apply flex flex-col items-center justify-center min-h-100 gap-y-4;
 }
 
 .logo-container {
-    @apply text-7xl mb-5 text-red-400;
+    color: var(--accent);
+    font-size: 7em;
+    @apply drop-shadow-lg font-semibold;
+    -webkit-text-stroke: 0.1rem white;
+    text-shadow:
+        0.3rem 0.3rem 5 black;
 }
 
+/* BUTTON CONFIG */
 .button-container {
-    @apply flex gap-x-2;
+    @apply flex gap-x-4;
 }
 
 .btn {
-    @apply border border-gray-400 py-2 px-2 bg-slate-300 rounded shadow;
+    background-color: var(--button);
+    border-left: solid white 0.2rem;
+    border-top: solid white 0.2rem;
+    border-right: solid var(--buton-down) 0.2rem;
+    border-bottom: solid var(--buton-down) 0.2rem;
+    box-shadow: 0 0 0 0.2rem black;
+    @apply text-lg font-semibold drop-shadow-lg p-2;
+    /* @apply border border-gray-400 py-2 px-2 bg-slate-300 rounded shadow; */
 }
 
 .btn:hover {
-    @apply bg-slate-400;
+    cursor: pointer;
+    background-color: var(--button-hover);
 }
 
 .btn:active {
-    @apply bg-slate-500;
+    cursor: pointer;
+    background-color: var(--buton-down);
+    border-left: solid var(--button-down) 0.2rem;
+    border-top: solid var(--button-down) 0.2rem;
+    border-right: solid var(--button) 0.2rem;
+    border-bottom: solid var(--button) 0.2rem;
+    box-shadow: inset 0.2rem 0.2rem 0 black;
+    /* Moves shadow inside */
+    transform: translate(2px, 2px);
+    /* Moves the button down */
 }
 
 #search-bar {
-    @apply border border-gray-400 rounded-md w-140;
+    background-color: var(--text);
+    color: var(--bg);
+    @apply border border-gray-400 w-140 h-10;
+    /* @apply border border-gray-400 rounded-md w-140; */
 }
 
+/* FOOTER */
 footer {
     @apply mt-auto py-4 text-center text-sm w-full;
 }
@@ -37,10 +78,47 @@ footer p {
 }
 
 footer a {
-    @apply text-red-500 hover:underline;
+    color: var(--accent);
+    @apply hover:underline;
 }
 
 #copyright {
     @apply text-xs mt-5;
 }
 
+/* I STOLE THIS FROM https://github.com/Kaweees/kaweees.github.io/commit/2f0a2b45b3c98f97f827d592e605d812f73c0ba3 */
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(20, 20, 20, 0) 66%, rgba(0, 0, 0, 0.15) 33%);
+    background-size: 100% 5px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: scanlines-anim 1s linear infinite;
+}
+
+@keyframes scanlines-anim {
+
+    0% {
+
+
+        background-position: 0px 0px;
+
+
+    }
+
+    100% {
+        background-position: 0px 15px;
+    }
+}
+
+@media only screen and (orientation: portrait) {
+    body::before {
+        background-size: 100% 4px;
+    }
+}
