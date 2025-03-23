@@ -7,6 +7,7 @@ import (
     "os"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
+    "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/crawler"
     "github.com/IonelPopJara/search-engine/services/spider/internal/database"
     "github.com/IonelPopJara/search-engine/services/spider/internal/controllers"
@@ -23,8 +24,9 @@ func getEnv(key, fallback string) string {
 func main() {
 
     // Parse flags
-    maxConcurrency := flag.Int("max-concurrency", 20, "Maximum number of concurrenet workers")
-    maxPages := flag.Int("max-pages", 100, "Maximum number of pages per batch")
+    maxConcurrency := flag.Int("max-concurrency", 5, "Maximum number of concurrenet workers")
+    maxPages := flag.Int("max-pages", 30, "Maximum number of pages per batch")
+    startingURL := flag.String("starting-url", "https://en.wikipedia.org/wiki/Kamen_Rider", "Starting URL for this spider")
 
     flag.Parse()
 
@@ -43,11 +45,9 @@ func main() {
     }
 
     // Add an entry to the message queue with score 0 (high priority)
-    err = db.PushURL("https://en.wikipedia.org/wiki/Kamen_Rider", 0)
-    if err != nil {
-        log.Printf("")
-        return
-    }
+    // PushURL also creates a lookup entry
+    msg := db.PushURL(*startingURL, 0)
+    log.Printf("PUSH %v - %v\n", *startingURL, msg)
 
     // Instantiate controllers
     pageController := controllers.NewPageController(db)
@@ -64,14 +64,37 @@ func main() {
         Images:         make(map[string][]*pages.Image),
         MaxPages:       *maxPages,
         MaxConcurrency: *maxConcurrency,
-        CachedPages:    make(map[string]*pages.Page),
     }
-
-    // Populate the CachedPages map
-    crawler.CachedPages = pageController.GetAllPages()
 
     // Infinite loop to crawl the web in batches
     for {
+
+        // Check how busy the indexer queue is
+        log.Printf("Checking number of entries...\n")
+        // If we have reached the maximum number of entries in the spider queue
+        queueSize, err := db.GetIndexerQueueSize()
+        if err != nil {
+            log.Printf("Error getting indexer queue: %v\n", err)
+            return
+        }
+
+        if queueSize >= utils.MaxIndexerQueueSize {
+            log.Printf("Indexer queue is full. Waiting...\n")
+            // Wait until we receive a signal to start crawling again
+            for {
+                sig, err := db.PopSignalQueue()
+                if err != nil {
+                    log.Printf("could not get signal: %v\n", err)
+                    return
+                }
+
+                if sig == utils.ResumeCrawl {
+                    log.Printf("Resume crawl!\n")
+                    break
+                }
+            }
+        }
+
         log.Printf("Spawning workers...\n")
         for i := 0; i < crawler.MaxConcurrency; i++ {
             crawler.Wg.Add(1)
@@ -80,16 +103,10 @@ func main() {
 
         crawler.Wg.Wait()
 
-        // Repopulate the CachedPages map to account for changes with other runners
-        crawler.CachedPages = pageController.GetAllPages()
-
         // Write entries to the db
         pageController.SavePages(crawler)
         linksController.SaveLinks(crawler)
         imageController.SaveImages(crawler)
-
-        // Repopulate the CachedPages map to account for changes with other runners
-        crawler.CachedPages = pageController.GetAllPages()
 
         // Clean visited pages by this runner
         crawler.Pages = make(map[string]*pages.Page)

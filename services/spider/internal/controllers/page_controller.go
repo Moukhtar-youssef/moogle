@@ -72,22 +72,25 @@ func (pgc *PageController) SavePages(crawcfg *crawler.CrawlerConfig) {
 
     for _, page := range data {
         // Check if the page has not been crawled
-        if _, exists := crawcfg.CachedPages[page.NormalizedURL]; !exists {
-            // Hash page
-            pageHash, err := pages.HashPage(page)
-            if err != nil {
-                log.Printf("Error hashing page %s: %v", page.NormalizedURL, err)
-                continue
-            }
-
-            // Append command to pipeline
-            pipeline.HSet(pgc.db.Context, utils.PagePrefix + ":"+page.NormalizedURL, pageHash)
-
-            // Push to the indexer queue
-            pgc.db.Client.LPush(pgc.db.Context, "indexer_queue", utils.PagePrefix + ":" +page.NormalizedURL)
-        } else {
-            log.Printf("Skipping %v. Already crawled\n", page.NormalizedURL)
+        // if _, exists := crawcfg.CachedPages[page.NormalizedURL]; !exists {
+        // } else {
+        //     log.Printf("Skipping %v. Already crawled\n", page.NormalizedURL)
+        // }
+        // Hash page
+        pageHash, err := pages.HashPage(page)
+        if err != nil {
+            log.Printf("Error hashing page %s: %v", page.NormalizedURL, err)
+            continue
         }
+
+        // Append command to pipeline
+        pipeline.HSet(pgc.db.Context, utils.PagePrefix + ":"+page.NormalizedURL, pageHash)
+
+        // Push to the indexer queue
+        // NOTE: For some weird reason "indexer_queue" does not work, but any other name does :/
+        // res, err := pgc.db.Client.LPush(pgc.db.Context, utils.IndexerQueueKey, utils.PagePrefix + ":" +page.NormalizedURL).Result()
+        pgc.db.Client.LPush(pgc.db.Context, utils.IndexerQueueKey, utils.PagePrefix + ":" +page.NormalizedURL).Result()
+
     }
 
     // Execute the pipeline

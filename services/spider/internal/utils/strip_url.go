@@ -6,32 +6,28 @@ import (
     "fmt"
 )
 
-func NormalizeURL(rawURL string) (string, error) {
+// This function removes queries and fragments
+func StripURL(rawURL string) (string, error) {
     u, err := url.Parse(rawURL)
 
     if err != nil {
         return "", fmt.Errorf("Could not parse raw URL [%w]", err) 
     }
 
-    if u.Scheme != "https" && u.Scheme != "http" {
-        return "", fmt.Errorf("URL has invalid field 'Scheme'")
+    if u.Scheme == "" {
+        return "", fmt.Errorf("URL has no field 'Scheme'")
     }
 
     if u.Host == "" {
         return "", fmt.Errorf("URL has no field 'Host'")
     }
 
-    host := u.Host
-    if strings.HasPrefix(host, "www.") {
-        host = host[4:]
-    }
-
-    normalizedURL := host
+    strippedURL := u.Scheme + "://" + u.Host
 
     if u.Path != "" {
         trimmedPath := strings.TrimSuffix(u.Path, "/")
-        normalizedURL += trimmedPath
+        strippedURL += trimmedPath
     }
 
-    return normalizedURL, nil
+    return strippedURL, nil
 }

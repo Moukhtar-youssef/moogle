@@ -1,8 +1,8 @@
 services:
   spider-service:
-    image: ghcr.io/ionelpopjara/search-engine/spider:latest
+    build: .
+    # image: ghcr.io/ionelpopjara/search-engine/spider:latest
     env_file: "variables.env"
     deploy:
       replicas: 1
-    restart: always
 

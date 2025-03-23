@@ -2,6 +2,7 @@ package crawler
 
 import (
     "sync"
+    "fmt"
 
     "github.com/IonelPopJara/search-engine/services/spider/internal/utils"
     "github.com/IonelPopJara/search-engine/services/spider/internal/pages"
@@ -17,7 +18,6 @@ type CrawlerConfig struct {
     Images              map[string][]*pages.Image
     MaxPages            int                 // Max discovered pages
     MaxConcurrency      int                 // Maximum concurrent workers in the pool
-    CachedPages         map[string]*pages.Page// All the db pages cached
 }
 
 func (crawcfg *CrawlerConfig) lenPages() int {
@@ -40,45 +40,23 @@ func (crawcfg *CrawlerConfig) maxPagesReached() (bool) {
     return false
 }
 
-
-func (crawcfg *CrawlerConfig) canVisitPage(normalizedURL string) (bool) {
-    crawcfg.Mu.Lock()
-    defer crawcfg.Mu.Unlock()
-
-    if _, visited := crawcfg.Pages[normalizedURL]; visited {
-        return false
-    }
-
-    if _, visited := crawcfg.CachedPages[normalizedURL]; visited {
-        // TODO: Check timestamp
-        return false
-    }
-
-    return true
-}
-
-func (crawcfg *CrawlerConfig) addPageVisit(page *pages.Page) (bool) {
+func (crawcfg *CrawlerConfig) addPage(page *pages.Page) error {
     crawcfg.Mu.Lock()
     defer crawcfg.Mu.Unlock()
 
     normalizedURL := page.NormalizedURL
 
     if _, visited := crawcfg.Pages[normalizedURL]; visited {
-        return false
-    }
-
-    if _, visited := crawcfg.CachedPages[normalizedURL]; visited {
-        // TODO: Check timestamp
-        return false
+        return fmt.Errorf("Page already visited")
     }
 
     if len(crawcfg.Pages) >= crawcfg.MaxPages {
         // Can't add more pages because max pages has been reached
-        return false
+        return fmt.Errorf("Max pages reached")
     }
 
     crawcfg.Pages[normalizedURL] = page
-    return true
+    return nil
 }
 
 func (crawcfg *CrawlerConfig) UpdateLinks(normalizedCurrentURL string, outgoingLinks []string) {
@@ -110,8 +88,8 @@ func (crawcfg *CrawlerConfig) UpdateLinks(normalizedCurrentURL string, outgoingL
 }
 
 func (crawcfg* CrawlerConfig) AddImages(normalizedCurrentURL string, imagesMap map[string]map[string]string) {
-    // crawcfg.Mu.Lock()
-    // defer crawcfg.Mu.Unlock()
+    crawcfg.Mu.Lock()
+    defer crawcfg.Mu.Unlock()
 
     for imgURL, imgAttrs := range imagesMap {
         imgAlt := ""
@@ -127,8 +105,6 @@ func (crawcfg* CrawlerConfig) AddImages(normalizedCurrentURL string, imagesMap m
         }
 
         crawcfg.Images[normalizedCurrentURL] = append(crawcfg.Images[normalizedCurrentURL], image)
-
-        // log.Printf("%v\n", image)
     }
 }
 
