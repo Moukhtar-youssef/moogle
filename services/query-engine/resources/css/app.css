@@ -1,0 +1,287 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --bg: #1f2335;
+    --text: #c0caf5;
+    --accent: #c53b53;
+    --button: #737aa2;
+    --buton-down: #414868;
+    --button-hover: #565f89;
+    --bg-2: #24283b;
+    --accent-2: #ff757f;
+    --title: #7dcfff;
+    --url: #c3e88d;
+    --blue: #3d59a1;
+    --orange: #ff9e64;
+    --another: #394b70;
+}
+
+body {
+    background-color: var(--bg-2);
+}
+
+footer {
+    background-color: var(--bg);
+    @apply mt-auto py-4 text-center text-sm w-full;
+}
+
+footer p {
+    @apply text-sm;
+}
+
+footer a {
+    @apply text-red-500 hover:underline;
+}
+
+#copyright {
+    @apply text-xs mt-5;
+}
+
+/* SEARCH RESULTS STYLES */
+.results-counter {
+    color: var(--accent-2);
+    @apply mx-10 my-3;
+}
+
+.results-container {
+    @apply flex justify-center grid grid-cols-3 px-50;
+}
+
+.results-images-container {
+    @apply flex flex-row;
+
+}
+
+.pages-container {
+    @apply pr-5;
+}
+
+.images-container {
+    border-left: solid var(--button) 0.1rem;
+    @apply w-100 pl-5 h-full;
+}
+
+.top-images-text {
+    color: var(--accent-2);
+    @apply text-3xl mb-5;
+}
+
+.image {
+    display: inline-block;
+    overflow: hidden;
+    border: solid var(--text) .1rem;
+    background-color: var(--another);
+    box-shadow: .1rem .1rem .1rem 0 black;
+    @apply flex flex-col items-center justify-center text-center m-1;
+}
+
+.actual-image {
+    background-color: white;
+}
+
+.image p.img-title {
+    color: var(--text);
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    @apply text-center w-full p-1 text-base font-bold;
+}
+
+.image p.img-text {
+    color: var(--orange);
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    @apply text-start w-full p-1 text-base font-bold;
+}
+
+/* RESULT STYLES */
+.result-container {
+    background-color: var(--bg);
+    border-top: solid var(--buton-down) 0.2rem;
+    border-left: solid var(--buton-down) 0.2rem;
+    border-bottom: solid black 0.2rem;
+    border-right: solid black 0.2rem;
+    color: var(--text);
+    @apply mb-5 p-2;
+}
+
+.result-container:hover {
+    background-color: var(--bg-2);
+}
+
+.result-title {
+    color: var(--title);
+    @apply underline visited:text-purple-600 text-lg;
+}
+
+.result-title:hover {
+    color: var(--blue);
+}
+
+.result-text {
+    @apply text-sm;
+}
+
+.result-url {
+    color: var(--url);
+    @apply text-sm;
+}
+
+/* BUTTON CONFIG */
+.button-container {
+    @apply flex gap-x-4;
+}
+
+.btn {
+    background-color: var(--button);
+    border-left: solid white 0.2rem;
+    border-top: solid white 0.2rem;
+    border-right: solid var(--buton-down) 0.2rem;
+    border-bottom: solid var(--buton-down) 0.2rem;
+    box-shadow: 0 0 0 0.2rem black;
+    @apply text-sm font-semibold drop-shadow-lg p-2 ml-1;
+    /* @apply border border-gray-400 py-2 px-2 bg-slate-300 rounded shadow; */
+}
+
+.btn:hover {
+    cursor: pointer;
+    background-color: var(--button-hover);
+}
+
+.btn:active {
+    cursor: pointer;
+    background-color: var(--buton-down);
+    border-left: solid var(--button-down) 0.2rem;
+    border-top: solid var(--button-down) 0.2rem;
+    border-right: solid var(--button) 0.2rem;
+    border-bottom: solid var(--button) 0.2rem;
+    box-shadow: inset 0.2rem 0.2rem 0 black;
+    /* Moves shadow inside */
+    transform: translate(2px, 2px);
+    /* Moves the button down */
+}
+
+#search-bar {
+    background-color: var(--text);
+    color: var(--bg);
+    @apply border border-gray-400 w-140 h-10;
+    /* @apply border border-gray-400 rounded-md w-140; */
+}
+
+/* MOOGLE BAR STYLES */
+.moogle-bar-container {
+    background-color: var(--bg);
+    border-bottom: solid var(--button) 0.1rem;
+    @apply flex flex-col pt-5 px-5;
+    /* @apply flex items-center max-w-full py-5 px-2; */
+    /* @apply flex flex-row items-end p-5 max-w-full items-center; */
+}
+
+.top-part {
+    @apply flex items-center;
+}
+
+.logo-container {
+    color: var(--accent);
+    font-size: 5em;
+    @apply drop-shadow-lg font-semibold;
+    -webkit-text-stroke: 0.1rem white;
+    text-shadow:
+        0.3rem 0.3rem 5 black;
+}
+
+#search-bar {
+    background-color: var(--text);
+    color: var(--bg);
+    @apply border border-gray-400 w-140 h-10;
+}
+
+.bottom-part {
+    @apply flex flex-row items-center justify-start ml-40;
+}
+
+.tab {
+    color: var(--text);
+    @apply pb-1 mx-2;
+}
+
+.tab.active {
+    border-bottom: solid var(--text) 0.2rem;
+}
+
+/* PAGINATION BAR STYLES */
+.moogle-letter {
+    @apply text-6xl text-red-400;
+}
+
+.moogle-page {
+    @apply text-center;
+}
+
+.moogle-page.active {
+    cursor: default;
+}
+
+.moogle-page.active .moogle-letter {
+    @apply text-blue-400;
+}
+
+.moogle-page.inactive {
+    cursor: pointer;
+}
+
+.moogle-page p {
+    margin: 0;
+    line-height: 1;
+}
+
+.moogle-page.inactive p {
+    text-decoration: underline;
+    @apply text-blue-400;
+}
+
+/* I STOLE THIS FROM https://github.com/Kaweees/kaweees.github.io/commit/2f0a2b45b3c98f97f827d592e605d812f73c0ba3 */
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(20, 20, 20, 0) 66%, rgba(0, 0, 0, 0.15) 33%);
+    background-size: 100% 5px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: scanlines-anim 1s linear infinite;
+}
+
+@keyframes scanlines-anim {
+
+    0% {
+
+
+        background-position: 0px 0px;
+
+
+    }
+
+    100% {
+        background-position: 0px 15px;
+    }
+}
+
+@media only screen and (orientation: portrait) {
+    body::before {
+        background-size: 100% 4px;
+    }
+}
