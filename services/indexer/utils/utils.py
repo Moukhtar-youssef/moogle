@@ -8,13 +8,19 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-import re
+from utils.constants import FILE_TYPES
 
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('punkt_tab')
 
 stop_words = set(stopwords.words('english'))
+
+def split_name(filename: str):
+    pattern = r'[-_./\s]+'
+    parts = re.split(pattern, filename)
+    parts = [part.lower() for part in parts if part and part.lower() not in FILE_TYPES and "px" not in part.lower()]
+    return parts
 
 def get_meta_content(soup, property_value=None, name_value=None):
     tag = None

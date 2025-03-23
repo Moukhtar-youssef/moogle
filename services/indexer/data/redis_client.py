@@ -1,14 +1,16 @@
+import time
 import redis
 import logging
+from utils.constants import *
+
+from typing import Optional, List
 from models.page import Page
 from models.metadata import Metadata
 from models.image import Image
-from email.utils import format_datetime
-from datetime import datetime
-import time
+from models.outlinks import Outlinks
 
+# SETUP LOGGER
 logger = logging.getLogger(__name__)
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,36 @@ class RedisClient:
             logger.error(f'Failed to connect to redis')
             self.client = None
 
-    def get_page(self, key: str) -> Page:
+    # --------------------- MESSAGE QUEUE ---------------------
+    def pop_page(self) -> Optional[str]:
+        try :
+            popped = self.client.brpop(INDEXER_QUEUE_KEY)
+            if not popped:
+                logger.warning(f'Could not fetch from message queue')
+                return None
+
+            _, page_id = popped
+            return page_id
+        except Exception as e:
+            logger.error(f'Could not fetch from message queue: {e}')
+            return None
+
+    def get_queue_size(self) -> Optional[int]:
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return
+        return self.client.llen(INDEXER_QUEUE_KEY)
+
+    def signal_crawler(self) -> None:
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return
+        # Signal the crawler that we can continue
+        self.client.lpush(SIGNAL_QUEUE_KEY, RESUME_CRAWL)
+    # --------------------- MESSAGE QUEUE ---------------------
+
+    # --------------------- PAGE DATA ---------------------
+    def get_page_data(self, key: str) -> Optional[Page]:
         if self.client is None:
             logger.error(f'Redis connection not initialized')
             return None
@@ -47,79 +78,77 @@ class RedisClient:
             logger.error(f'Unexpected error while fetching {key}: {e}')
             return None
 
-    def get_metadata(self, key: str) -> Metadata:
+    def delete_page_data(self, key:str) -> None:
         if self.client is None:
             logger.error(f'Redis connection not initialized')
-            return None
+            return
 
-        metadata_hashed = self.client.hgetall(key)
+        res = self.client.delete(key)
+        if res <= 0:
+            logger.error(f'Could not remove {key} from Redis')
+    # --------------------- PAGE DATA ---------------------
 
-        if not metadata_hashed:
-            logger.warning(f'Metadata with key {key} not found in Redis')
-            return None
-
-        logger.info(f'Metadata with key {key} successfully fetched')
-        return Metadata.from_hash(metadata_hashed)
-
-    def save_metadata(self, page_data: Page, html_data: Metadata) -> None:
-        url = page_data.normalized_url
-        title = html_data['title']
-        description = html_data['description']
-        text = html_data['summary_text']
-        last_crawled = page_data.last_crawled.strftime("%a, %d %b %Y %H:%M:%S ") + time.tzname[0]
-
-        if self.client is None:
-            logger.error(f'Redis connection not initialized')
-            return None
-
-        key = f'url_metadata:{url}'
-
-        metadata = {
-            'title': title if title else '',
-            'description': description if description else '',
-            'summary_text': text if text else '',
-            'last_crawled': last_crawled if last_crawled else '',
-            'normalized_url': url
-        }
-
-        self.client.hset(key, mapping=metadata)
-
-        logger.info(f'Metadata with key {key} successfully saved')
-
-    def save_word(self, word: str, url: str, weight: int) -> None:
-        if self.client is None:
-            logger.error(f'Redis connection not initialized')
-            return None
-
-        key = f'word:{word}'
-        self.client.zadd(key, {url: weight})
-
-    def get_page_images_urls(self, key: str) -> None:
+    # --------------------- PAGE IMAGES ---------------------
+    def get_page_images(self, normalized_url: str) -> Optional[List[str]]:
+        key = f'{PAGE_IMAGES_PREFIX}:{normalized_url}'
         page_images_urls = self.client.smembers(key)
+
+        if not page_images_urls:
+            return []
 
         return [url for url in page_images_urls]
 
-    def get_image(self, key: str):
+    def delete_page_images(self, normalized_url:str) -> None:
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return
+
+        key = f'{PAGE_IMAGES_PREFIX}:{normalized_url}'
+        res = self.client.delete(key)
+        if res <= 0:
+            logger.error(f'Could not remove {key} from Redis')
+
+    # --------------------- PAGE IMAGES ---------------------
+
+    # --------------------- IMAGES ---------------------
+    # Get image and delete it from Redis
+    def pop_image(self, image_url: str) -> Optional[Image]:
+        key = f'{IMAGE_PREFIX}:{image_url}'
         image_hashed = self.client.hgetall(key)
-        return Image.from_hash(image_hashed)
 
-    def get_images_from_word(self, key:str):
-        return self.client.zrange(key, 0, -1, withscores=True)
+        if not image_hashed:
+            logger.error(f'Could not fetch image {key} from Redis')
+            return None
 
-    def update_image(self, key: str, image) -> None:
-        image_hash = {
-            'page_url': image.page_url,
-            'alt':      image.alt,
-            'file_name':image.file_name
-        }
-        self.client.hset(key, mapping=image_hash)
+        res = self.client.delete(key)
+        if res <= 0:
+            logger.error(f'Could not remove {key} from Redis')
 
-    def save_word_images(self, word: str, image_url: str, weight: int) -> None:
+        return Image.from_hash(image_hashed, image_url)
+    # --------------------- IMAGES ---------------------
+
+    # --------------------- OUTLINKS ---------------------
+    def get_outlinks(self, normalized_url: str) -> Optional[Outlinks]:
+        print(f'get_outlinks...')
         if self.client is None:
             logger.error(f'Redis connection not initialized')
             return None
 
-        key = f'word_images:{word}'
-        self.client.zadd(key, {image_url: weight})
+        key = f'{OUTLINKS_PREFIX}:{normalized_url}'
+        res = self.client.smembers(key)
+        if not res:
+            logger.warning(f'No outlinks found for {key}')
+            return None
 
+        return Outlinks(_id=normalized_url, links=res)
 
+    def delete_outlinks(self, normalized_url: str) -> None:
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return
+
+        key = f'{OUTLINKS_PREFIX}:{normalized_url}'
+        res = self.client.delete(key)
+        if res <= 0:
+            logger.error(f'Could not remove {key} from Redis')
+    # --------------------- OUTLINKS ---------------------

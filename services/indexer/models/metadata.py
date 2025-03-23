@@ -1,28 +1,41 @@
-import json
+import time
 from typing import List, Dict, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
-from email.utils import parsedate_to_datetime
+from email.utils import parsedate_to_datetime, format_datetime
 
 @dataclass
 class Metadata:
-    title: str
-    description: str
-    summary_text: str
-    last_crawled: str
+    _id: str
+    title:          str
+    description:    str
+    summary_text:   str
+    last_crawled:   str
 
     @classmethod
-    def from_hash(cls, metadata: Dict[str, Any]) -> 'Metadata':
+    def from_dict(cls, metadata: Dict[str, Any]) -> 'Metadata':
         if metadata == None:
             return None
 
         # Parse fields
         last_crawled = parsedate_to_datetime(metadata['last_crawled'])
 
-        return cls (
-            title=metadata['title'],
-            description=metadata['description'],
-            summary_text=metadata['summary_text'],
-            last_crawled=last_crawled,
-        )
+        metadata["last_crawled"] = last_crawled
+        return cls(**metadata)
 
+    def to_dict(self) -> Dict[str, Any]:
+        # Convert to dictionary
+        data = asdict(self)
+        data["last_crawled"] = self.last_crawled.strftime("%a, %d %b %Y %H:%M:%S ") + time.tzname[0]
+        return data
+
+    def prettify(self) -> str:
+        return f"""
+        -----------------------------------------------------
+        URL: {self._id}
+        Title: {self.title}
+        Description: {self.description[:15] + '...' if len(self.description) > 15 else self.description}
+        Summary Text: {self.summary_text[:15] + '...' if len(self.summary_text) > 15 else self.summary_text}
+        Last Crawled: {self.last_crawled}
+        -----------------------------------------------------
+        """

@@ -1,4 +1,5 @@
 beautifulsoup4
 py3langid
+pymongo
 redis
 nltk
