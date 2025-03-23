@@ -211,3 +211,5 @@ dist
 
 # iptrack.txt
 iptrack.txt
+
+variables.env
