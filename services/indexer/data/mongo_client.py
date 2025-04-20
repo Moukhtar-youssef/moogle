@@ -2,7 +2,7 @@ import time
 import logging
 import pymongo
 
-from typing import Optional, List
+from typing import Optional, List, Set
 from models.page import Page
 from models.metadata import Metadata
 from models.image import Image
@@ -108,15 +108,11 @@ class MongoClient:
         # Fetch Word from Mongo
         collection = self.db[WORD_COLLECTION]
 
-        result = collection.update_one(
-            {"_id": word},
-            {
-                "$push": {
-                    "pages": {"url": url, "weight": weight}
-                }
-            },
-            upsert=True
-        )
+        update_operation = self.add_url_to_word_operation(word, url, weight)
+        if update_operation is None:
+            return
+
+        collection.bulk_write([update_operation])
 
     def add_url_to_word_operation(self, word: str, url: str, weight: int) -> UpdateOne:
         if self.client is None:
@@ -125,14 +121,40 @@ class MongoClient:
 
         return UpdateOne(
             {"_id": word},
-            {
-                "$push": {
-                    "pages": {
-                        "$each": [{"url": url, "weight": weight}],
-                        "$sort": {"weight": -1}, # Sort by weight in descending order
+            [
+                {
+                    "$set": {
+                        "pages": {
+                            "$cond": {
+                                "if": {"$isArray": "$pages"},
+                                "then": {
+                                    "$concatArrays": [
+                                        # Filter out any existing entry with this URL
+                                        {"$filter": {
+                                            "input": "$pages",
+                                            "cond": {"$ne": ["$$this.url", url]}
+                                        }},
+                                        # Add the new entry
+                                        [{"url": url, "tf": weight}]
+                                    ]
+                                },
+                                "else": [{"url": url, "tf": weight}]
+                            }
+                        }
+                    }
+                },
+                # Sort the pages array by tf in descending order
+                {
+                    "$set": {
+                        "pages": {
+                            "$sortArray": {
+                                "input": "$pages",
+                                "sortBy": {"tf": -1}
+                            }
+                        }
                     }
                 }
-            },
+            ],
             upsert=True
         )
 
@@ -140,6 +162,25 @@ class MongoClient:
         if not operations:
             return
         return self.perform_batch_operations(operations, 'word')
+
+    def add_words_to_dictionary(self, words: Set[str]):
+        if self.client is None:
+            logger.error(f'Mongo connection not initialized')
+            return None
+        collection = self.db["dictionary"]  # Assuming a dictionary collection
+        try:
+            operations = []
+            for word in words:
+                operations.append(UpdateOne(
+                    {"_id": word},
+                    {"$set": {"_id": word}},
+                    upsert=True
+                ))
+            if operations:
+                collection.bulk_write(operations)
+        except Exception as e:
+            logger.error(f"Error adding words to dictionary: {e}")
+            return None
 
     # --------------------- WORD ---------------------
 
@@ -152,16 +193,11 @@ class MongoClient:
         # Fetch Word from Mongo
         collection = self.db[WORD_IMAGES_COLLECTION]
 
-        result = collection.update_one(
-            {"_id": word},
-            {
-                "$push": {
-                    "pages": {"url": image_url, "weight": weight}
-                }
-            },
-            upsert=True
-        )
+        update_operation = self.add_url_to_word_images_operation(word, image_url, weight)
+        if update_operation is None:
+            return
 
+        collection.bulk_write([update_operation])
 
     def add_url_to_word_images_operation(self, word: str, image_url: str, weight: int) -> UpdateOne:
         if self.client is None:
@@ -208,5 +244,5 @@ class MongoClient:
             upsert=True
         )
 
-        print(f'save_outlinks: {result}')
+        return result
     # --------------------- OUTLINKS ---------------------

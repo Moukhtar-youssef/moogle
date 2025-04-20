@@ -22,10 +22,9 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
-
     // Parse flags
-    maxConcurrency := flag.Int("max-concurrency", 5, "Maximum number of concurrenet workers")
-    maxPages := flag.Int("max-pages", 30, "Maximum number of pages per batch")
+    maxConcurrency := flag.Int("max-concurrency", 10, "Maximum number of concurrenet workers")
+    maxPages := flag.Int("max-pages", 10, "Maximum number of pages per batch")
     startingURL := flag.String("starting-url", "https://en.wikipedia.org/wiki/Kamen_Rider", "Starting URL for this spider")
 
     flag.Parse()

@@ -89,28 +89,50 @@ This is to display results
     - 4) "normalized_url" - string
     - 5) "last_crawled" - timestamp
 
-## TODO:
 
+## Probably not doing
+- [ ] Fix the links not updating to purple
+
+## TODO:
+- [x] Check Spider
+- [x] Store TF with Indexer
+- [x] Make another service to store IDF
+- [ ] Check Query Engine
+- [ ] Convert Monitoring to Docker Swarm
+- [ ] Buy a domain and Deploy
+
+
+
+- [ ] Get a domain
+- [ ] Deploy
+- [ ] Update Spider
+    - [ ] Clean up code
+    - [ ] Store favicon icons for preview
+    - [ ] Check how I'm storing backlinks and outlinks
+- [ ] Create a PageRank service
+- [ ] Create a service that takes the data from the crawler and stores the necessary data in mongodb (page and dictionary of words)
+- [ ] Update indexer
 - [x] Add server side rendering again
 - [x] Implement pagination
 - [x] Make placeholder frontend again
     - [x] Landing page
-    - [ ] Results page (this also shows the first 5 images found)
+    - [x] Results page (this also shows the first 5 images found)
     - [x] Images tab (just like google search images)
 
-- [ ] Omit images that are less than 100x100 px
-- [ ] Check description in the indexer
-- [ ] Modify indexer to also account for page url words for the weight
-- [ ] Filename is not being stored by the indexer
-- [ ] Load balancing
-- [ ] Implement query filter service
-- [ ] Handle weird queries like 'something+something' in the frontend
-- [ ] Fix the links not updating to purple
-- [ ] Add search suggeetsions based on most popular searches
-- [ ] Add "more than x amount of entries" at the begining of the client. Like when google said "Soon 2.5 million entries or something"
-- [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
-    - [ ] Just check all possible combintions like "mega-man" "megaman" "mega" "man"
-- [ ] Add favicon icons for preview
+- [x] Load balancing
+- [x] Update indexer
+    - [x] Omit images that are less than 100x100 px
+    - [x] Modify indexer to also account for page url words for the weight
+    - [x] Filename is not being stored by the indexer
+    - [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
+        - [ ] Just check all possible combintions like "mega-man" "megaman" "mega" "man"
+- [x] Implement query filter service
+    - [ ] Handle weird queries like 'something+something' in the frontend
+    - [ ] Add search suggeetsions based on most popular searches
+    - [ ] The query filter will also store the 100 most popular search terms
+- [x] Update backend and frontend
+    - [x] Add "more than x amount of entries" at the begining of the client. Like when google said "Soon 2.5 million entries or something"
+    - [x] If that message is not fetch, the server is down so show a message
 - [x] Add mongodb support
 - [x] Refactor crawler code and normalize the names for the datasets
 - [x] Remove datasets after being crawled: CHECK THIS ONE
@@ -154,10 +176,10 @@ This is to display results
 
 ## Top Priority
 - [x] Images
-- [ ] Make frontend prettier
+- [x] Make frontend prettier
 - [x] Docker images
 - [x] Scaling up/down
-- [ ] Load balancing
+- [x] Load balancing
 
     parsedURL, err := url.Parse("https://en.wikipedia.org/wiki/Mega_Man_X")
 
@@ -198,3 +220,4 @@ SILENE TEST DRIVEN DEVEVLOPER
 
 
 The main problem that docker solves is hte "It works on my machine"
+

@@ -28,6 +28,9 @@ class QuerySearchController extends Controller
 
             // Rank pages
             foreach ($words as $word) {
+                if ($results->where('id', $word)->count() <= 0) {
+                    continue;
+                }
                 $pages = $results->where('id', $word)->first()->pages;
                 foreach ($pages as ['url' => $url, 'weight' => $weight]) {
                     $urls[$url] = true;
@@ -97,28 +100,39 @@ class QuerySearchController extends Controller
 
             // Return the top N images
             return $sortedWordImagesResults->take($limit);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return collect(); // Return an empty collection in case of error
         }
     }
 
+    public function count_pages(Request $request)
+    {
+        $results = DB::connection('mongodb')->table('metadata')->count();
+        return response()->json([
+            'status' => 'up',
+            'pages' => $results,
+        ]);
+    }
+
     public function search(Request $request)
     {
-        // $test = 'upload.wikimedia.org/wikipedia/en/thumb/5/5a/Kamen_Rider_Ex-Aid_Trilogy_poster.jpg/220px-Kamen_Rider_Ex-Aid_Trilogy_poster.jpg';
-        $query = $request->input('q');
+        $suggestions = $request->input('suggestions');
+        $originalQuery = $request->input('q');
+        $query = $request->input('processed_query');
         if (!$query) {
             return view('search-results', [
                 'query' => $query,
                 'results' => [],
                 'total' => 0,
                 'topImages' => [],
+                'suggestions' => $suggestions,
+                'originalQuery' => $originalQuery,
             ]);
         }
 
         // Split the query string
         $query = str_replace('+', ' ', $query);
         $words = explode(' ', strtolower($query));
-
 
         // Set the number of results per page
         $perPage = 20;
@@ -138,17 +152,19 @@ class QuerySearchController extends Controller
                     'results' => [],
                     'total' => 0,
                     'topImages' => [],
+                    'suggestions' => $suggestions,
+                    'originalQuery' => $originalQuery,
                 ]);
             }
 
             // Rank pages
             foreach ($words as $word) {
+
+                if ($results->where('id', $word)->count() <= 0) {
+                    continue;
+                }
                 $pages = $results->where('id', $word)->first()->pages;
                 foreach ($pages as ['url' => $url, 'weight' => $weight]) {
-                    if ($url == "en.wikipedia.org/wiki/Kamen_Rider") {
-                        error_log("TESINTg\n\n");
-                        error_log("URL: $url");
-                    }
                     $urls[$url] = true;
                     if (!isset($wordHashmap[$url])) {
                         $wordHashmap[$url] = [
@@ -168,17 +184,26 @@ class QuerySearchController extends Controller
                 }
             }
 
-            // Calculate backlinks weight
+            // Get the pageranks
             $uniqueUrls = array_keys($urls);
-            $results = DB::connection('mongodb')->table('backlinks')
+            // $results = DB::connection('mongodb')->table('backlinks')
+            //     ->whereIn('_id', $uniqueUrls)
+            //     ->get();
+
+            $pageranks = DB::connection('mongodb')->table('pagerank')
                 ->whereIn('_id', $uniqueUrls)
                 ->get();
 
-            foreach ($results as $result) {
-                $backlinks = count($result->links);
-                $url = $result->id;
-                $wordHashmap[$url]['backlinks'] = $backlinks;
+            foreach ($pageranks as $pagerank) {
+                $wordHashmap[$pagerank->id]['pagerank'] = $pagerank->rank;
+                error_log('Pagerank added');
             }
+
+            // foreach ($results as $result) {
+            //     $backlinks = count($result->links);
+            //     $url = $result->id;
+            //     $wordHashmap[$url]['backlinks'] = $backlinks;
+            // }
 
             // Fetch page metadata
             $pages_metadata = DB::connection('mongodb')->table('metadata')
@@ -187,10 +212,11 @@ class QuerySearchController extends Controller
 
             /*return $pages_metadata;*/
             foreach ($uniqueUrls as $url) {
-                $count = $wordHashmap[$url]['count'];
+                // $count = $wordHashmap[$url]['count'];
                 $weight = $wordHashmap[$url]['weight'];
-                $backlinks = $wordHashmap[$url]['backlinks'];
-                $wordHashmap[$url]['rank'] = 500 * $count + 500 * $weight + 10000 * $backlinks;
+                // $backlinks = $wordHashmap[$url]['backlinks'];
+                $pagerank = $wordHashmap[$url]['pagerank'] ?? 0.001;
+                $wordHashmap[$url]['rank'] = 1000 * $weight + 10000 * $pagerank;
 
                 // Add page metadata
                 $page_metadata = $pages_metadata->where('id', $url)->first();
@@ -210,30 +236,34 @@ class QuerySearchController extends Controller
                 $topImages = $this->getTopImages($query, 4);
             }
 
-            // error_log('CHECK: ' . '' . json_encode($topImages[$test]));
-
             // Return view for SSR
             return view('search-results', [
                 'query' => $query,
                 'results' => $paginatedResults,
                 'total' => count($sortedWordResults),
                 'topImages' => $topImages,
+                'suggestions' => $suggestions,
+                'originalQuery' => $originalQuery,
             ]);
 
-        } catch (Exception $e) {
-            return response()->json(['server error' => $e . getMessage()], 500);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
     public function search_images(Request $request)
     {
-        $query = $request->input('q');
+        $suggestions = $request->input('suggestions');
+        $originalQuery = $request->input('q');
+        $query = $request->input('processed_query');
         if (!$query) {
             return view('search-results', [
                 'query' => $query,
                 'results' => [],
                 'total' => 0,
                 'topImages' => [],
+                'suggestions' => $suggestions,
+                'originalQuery' => $originalQuery,
             ]);
         }
 
@@ -255,6 +285,9 @@ class QuerySearchController extends Controller
 
             // Rank pages
             foreach ($words as $word) {
+                if ($results->where('id', $word)->count() <= 0) {
+                    continue;
+                }
                 $pages = $results->where('id', $word)->first()->pages;
                 foreach ($pages as ['url' => $url, 'weight' => $weight]) {
                     $urls[$url] = true;
@@ -327,10 +360,14 @@ class QuerySearchController extends Controller
                 'query' => $query,
                 'results' => $paginatedResults,
                 'total' => count($sortedWordImagesResults),
+                'topImages' => [],
+                'suggestions' => $suggestions,
+                'originalQuery' => $originalQuery,
             ]);
+
             /*return response()->json(['data' => $paginatedResults], 200);*/
-        } catch (Exception $e) {
-            return response()->json(['server error' => $e . getMessage()], 500);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

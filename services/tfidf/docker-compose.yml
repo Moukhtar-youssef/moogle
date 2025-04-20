@@ -1,0 +1,8 @@
+services:
+  indexer-service:
+    build: .
+    # image: ghcr.io/ionelpopjara/search-engine/indexer:latest
+    env_file: "variables.env"
+    deploy:
+      replicas: 1
+

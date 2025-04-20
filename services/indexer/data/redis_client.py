@@ -129,7 +129,6 @@ class RedisClient:
 
     # --------------------- OUTLINKS ---------------------
     def get_outlinks(self, normalized_url: str) -> Optional[Outlinks]:
-        print(f'get_outlinks...')
         if self.client is None:
             logger.error(f'Redis connection not initialized')
             return None

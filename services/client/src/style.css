@@ -7,6 +7,13 @@
     --button: #737aa2;
     --buton-down: #414868;
     --button-hover: #565f89;
+    --bg-2: #24283b;
+    --accent-2: #ff757f;
+    --title: #7dcfff;
+    --url: #c3e88d;
+    --blue: #3d59a1;
+    --orange: #ff9e64;
+    --another: #394b70;
 }
 
 body {
@@ -56,21 +63,35 @@ body {
     border-right: solid var(--button) 0.2rem;
     border-bottom: solid var(--button) 0.2rem;
     box-shadow: inset 0.2rem 0.2rem 0 black;
-    /* Moves shadow inside */
     transform: translate(2px, 2px);
-    /* Moves the button down */
+}
+
+.btn:disabled,
+.btn:disabled:hover,
+.btn:disabled:active {
+    cursor: default;
+    background-color: var(--buton-down);
+    border-left: solid var(--button-down) 0.2rem;
+    border-top: solid var(--button-down) 0.2rem;
+    border-right: solid var(--button) 0.2rem;
+    border-bottom: solid var(--button) 0.2rem;
+    box-shadow: inset 0.2rem 0.2rem 0 black;
+    transform: translate(2px, 2px);
 }
 
 #search-bar {
     background-color: var(--text);
     color: var(--bg);
-    @apply border border-gray-400 w-140 h-10;
-    /* @apply border border-gray-400 rounded-md w-140; */
+    @apply border border-gray-400 w-140 h-10 px-2;
+}
+
+#search-bar:disabled {
+    background-color: var(--button);
 }
 
 /* FOOTER */
 footer {
-    @apply mt-auto py-4 text-center text-sm w-full;
+    @apply mt-20 py-4 text-center text-sm w-full;
 }
 
 footer p {
@@ -84,6 +105,11 @@ footer a {
 
 #copyright {
     @apply text-xs mt-5;
+}
+
+.info {
+    color: var(--orange);
+    @apply text-base;
 }
 
 /* I STOLE THIS FROM https://github.com/Kaweees/kaweees.github.io/commit/2f0a2b45b3c98f97f827d592e605d812f73c0ba3 */

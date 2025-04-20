@@ -7,7 +7,7 @@ from utils.constants import *
 from models.image import Image
 from data.redis_client import RedisClient
 from data.mongo_client import MongoClient
-from utils.utils import get_html_data, split_name
+from utils.utils import get_html_data, split_name, is_valid_image, split_url
 
 import time
 
@@ -23,6 +23,7 @@ def handle_exit(signum, frame):
     global running
     logger.info('Termination signal received - shutting down...')
     running = False
+    sys.exit(0)
 
 signal.signal(signal.SIGTERM, handle_exit)
 signal.signal(signal.SIGINT, handle_exit)
@@ -125,6 +126,9 @@ if __name__ == "__main__":
         # Process images
         images_urls = redis.get_page_images(normalized_url)
 
+        # Iterate through the images and remove the ones that are smaller than 100x100[px]
+        images_urls = [url for url in images_urls if is_valid_image(url)]
+
         # What if I just save the first 100 words?
         top_words = dict(sorted(words_weight.items(), key=lambda item: item[1], reverse=True)[:MAX_INDEX_WORDS])
 
@@ -133,7 +137,6 @@ if __name__ == "__main__":
 
         # Create or update word entries and image entries
         for word, weight in top_words.items():
-            print(f'adding word to mongo: {word} | {weight}')
             # Save the word image entry to a batch of operations
             word_op = mongo.add_url_to_word_operation(word, normalized_url, weight)
             word_operations.append(word_op)
@@ -151,7 +154,7 @@ if __name__ == "__main__":
         mongo.add_word_images_bulk(word_images_operations)
 
         # I could put this loop inside the other one but it would look too bloated
-        # Update image hash to include file_name
+        # Update image hash to include filename
         # and update word_image to include entries with the words in the file name
         for image_url in images_urls:
             # Ignore svg files since they are usually just graphics
@@ -166,8 +169,8 @@ if __name__ == "__main__":
             if not image_data:
                 continue
 
-            # Update image data with file_name
-            image_data.file_name = image_name
+            # Update image data with filename
+            image_data.filename = image_name
 
             # Save image to mongo
             mongo.save_image(image_data)
@@ -196,6 +199,20 @@ if __name__ == "__main__":
                 # print(f'Saving {image_name} with score: {new_score}')
                 mongo.add_url_to_word_images(word, image_url, new_score)
 
+        # Iterate through the url name to add more weight to some words
+        words_in_url = split_url(normalized_url)
+        for word in words_in_url:
+            past_score = words_weight.get(word, 0)
+
+            # If a word in the url was already in our registry of words we multiply it
+            if past_score != 0:
+                new_score = past_score * 100
+                mongo.add_url_to_word(word, normalized_url, new_score)
+
+        # Store all the words
+        wordsSet = {word.lower() for word in text}
+        mongo.add_words_to_dictionary(wordsSet)
+
         # Delete page_data from redis
         redis.delete_page_data(page_id)
         # Delete page_images
@@ -203,7 +220,9 @@ if __name__ == "__main__":
 
         # Save outlinks to mongo
         outlinks = redis.get_outlinks(normalized_url)
-        mongo.save_outlinks(outlinks)
+        logger.info('Saving Outlinks...')
+        res = mongo.save_outlinks(outlinks)
+        logger.info(f'{res} Outlinks saved!')
         # Delete outlinks from redis
         redis.delete_outlinks(normalized_url)
 

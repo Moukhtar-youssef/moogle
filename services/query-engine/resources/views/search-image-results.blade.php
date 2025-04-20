@@ -11,7 +11,20 @@
 <body>
     <x-moogle-bar />
     <div class="results-counter">
-        Found {{ $total }} results found for "{{ $query }}"...
+        @php
+            $suggestion = '';
+            if ($suggestions) {
+                $suggestion = "Did you mean $query? ";
+            }
+        @endphp
+        <span id="suggestion">{{ $suggestion }}</span><span>Showing {{ $total }} results for
+            {{ $query }}</span>
+        @if ($suggestions)
+            <p>Search for <a id="suggestion-link"
+                    href="{{ route('search_images_force', ['processed_query' => $originalQuery]) }}">{{ $originalQuery }}</a>
+                instead
+            </p>
+        @endif
     </div>
     <div class="results-images-container">
         @if (count($results) > 0)
@@ -42,6 +55,5 @@
         <p id="copyright">©2025</p>
     </footer>
 </body>
-@vite('resources/js/search.js')
 
 </html>

@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Middleware\FuzzySearch;
+use App\Http\Middleware\StoreSearchTerm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\QuerySearchController;
+use App\Http\Controllers\RedisController;
 
 Route::get('/test-mongo', function (Request $request) {
     $connection = DB::connection('mongodb');
@@ -18,5 +21,10 @@ Route::get('/test-mongo', function (Request $request) {
     return ['msg' => $msg];
 });
 
-Route::get('/search', [QuerySearchController::class, 'search']);
-Route::get('/search_images', [QuerySearchController::class, 'search_images']);
+Route::get('/search', [QuerySearchController::class, 'search'])->middleware([FuzzySearch::class, StoreSearchTerm::class]);
+Route::get('/search_force', [QuerySearchController::class, 'search'])->name('search_force');
+Route::get('/search_images', [QuerySearchController::class, 'search_images'])->middleware(FuzzySearch::class);
+Route::get('/search_images_force', [QuerySearchController::class, 'search_images'])->name('search_images_force');
+Route::get('/count_pages', [QuerySearchController::class, 'count_pages']);
+Route::get('/get_top_searches', [RedisController::class, 'get_top_searches'])->name('get.top.searches');
+Route::get('/get_search_suggestions', [RedisController::class, 'get_search_suggestions'])->name('get.search.suggestions');

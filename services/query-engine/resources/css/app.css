@@ -48,6 +48,16 @@ footer a {
 }
 
 /* SEARCH RESULTS STYLES */
+#suggestion-link {
+    color: var(--title);
+    @apply underline;
+}
+
+#suggestion {
+    color: var(--text);
+    @apply font-bold;
+}
+
 .results-counter {
     color: var(--accent-2);
     @apply mx-10 my-3;
@@ -177,6 +187,35 @@ footer a {
     /* @apply border border-gray-400 rounded-md w-140; */
 }
 
+#search-results {
+    background-color: var(--text);
+    color: var(--bg);
+    @apply border border-gray-400 w-140 h-auto;
+}
+
+/* AUTO COMPLETE STYLES */
+#search-suggestions {
+    background-color: var(--text);
+    color: var(--bg);
+    @apply border border-gray-400 w-140 h-auto;
+
+}
+
+#search-suggestions-list {
+
+}
+
+.search-suggestion {
+    @apply p-1;
+    background-color: var(--button-down);
+}
+
+.search-suggestion:hover {
+    background-color: var(--accent);
+    color: var(--text);
+    @apply text-lg;
+}
+
 /* MOOGLE BAR STYLES */
 .moogle-bar-container {
     background-color: var(--bg);
@@ -202,7 +241,7 @@ footer a {
 #search-bar {
     background-color: var(--text);
     color: var(--bg);
-    @apply border border-gray-400 w-140 h-10;
+    @apply border border-gray-400 w-140 h-10 px-1;
 }
 
 .bottom-part {

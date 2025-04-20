@@ -1,0 +1,59 @@
+FROM php:8.3-fpm
+
+ARG user
+ARG uid
+
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    pkg-config \
+    libonig-dev \
+    libxml2-dev \
+    libpng-dev \
+    nodejs \
+    npm
+
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install php extensions
+RUN docker-php-ext-install mbstring xml
+
+# Install MongoDB extension
+RUN pecl install mongodb && docker-php-ext-enable mongodb
+
+# Install Redis extension
+RUN composer require predis/predis
+
+# install composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Create user
+RUN useradd -u $uid -ms /bin/bash -g www-data $user
+
+# Copy application
+COPY . /var/www
+
+COPY --chown=$user:www-data . /var/www
+
+# Make sure entrypoint script is executable
+COPY docker-entrypoint.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+WORKDIR /var/www
+
+# Install frontend dependencies and build assets
+RUN npm install && npm run build
+
+USER $user
+
+EXPOSE 9000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+CMD ["php-fpm"]
