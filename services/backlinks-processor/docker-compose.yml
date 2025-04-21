@@ -1,7 +1,7 @@
 services:
   backlinks-processor-service:
-    build: .
+    # build: .
+    image: ghcr.io/ionelpopjara/moogle/backlinks-processor:latest
     env_file: "variables.env"
     deploy:
       replicas: 1
-

@@ -1,7 +1,7 @@
 services:
-  spider-service:
+  page-rank-service:
     # build: .
-    image: ghcr.io/ionelpopjara/moogle/spider:latest
+    image: ghcr.io/ionelpopjara/moogle/page-rank:latest
     env_file: "variables.env"
     deploy:
       replicas: 1
