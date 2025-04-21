@@ -36,7 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Check if backend is running and fetch number of entries from the DB
-  fetch("http://127.0.0.1:8000/api/count_pages")
+  // http://127.0.0.1:8000/api/count_pages
+  fetch("https://api.moogle.app/api/count_pages")
     .then((res) => res.json())
     .then((data) => {
       if (data.status === "up") {
@@ -98,7 +99,8 @@ async function search(query) {
     console.log(`Query: ${query} | Encoded ${encodedQuery}`);
 
     // TODO: See how to replace this when it's hosted online
-    const backendUrl = `http://localhost:8000`;
+    // const backendUrl = `http://localhost:8000`;
+    const backendUrl = `https://api.moogle.app`;
     const requestUrl = `${backendUrl}/api/search?q=${encodedQuery}`;
 
     window.location.href = requestUrl;
@@ -109,7 +111,8 @@ async function search(query) {
 
 async function cringe() {
   try {
-    const cringeUrl = `http://localhost:8000/api/cringe`;
+    const cringeUrl = `https://api.moogle.app/api/cringe`;
+    // const cringeUrl = `http://localhost:8000/api/cringe`;
     window.location.href = cringeUrl;
   } catch (error) {
     console.log(error.message);
