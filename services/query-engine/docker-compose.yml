@@ -1,12 +1,13 @@
 services:
     # Query Engine
     query-engine:
-        build:
-            args:
-                user: query-engine-user
-                uid: 1000
-            context: .
-        image: query-engine-image
+        image: ghcr.io/ionelpopjara/moogle/query-engine:latest
+        # build:
+        #     args:
+        #         user: query-engine-user
+        #         uid: 1000
+        #     context: .
+        # image: query-engine-image
         deploy:
             replicas: 2 # 2 services for load balancing
         working_dir: /var/www
