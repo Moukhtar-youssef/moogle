@@ -26,6 +26,18 @@
     --another: #394b70;
 }
 
+#cringe-title {
+    color: var(--text);
+    background-color: var(--another);
+    @apply text-3xl p-2;
+}
+
+#cringe-top-searches {
+    color: var(--text);
+    @apply text-xl p-2;
+}
+
+
 body {
     background-color: var(--bg-2);
 }

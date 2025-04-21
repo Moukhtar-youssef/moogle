@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @vite('resources/css/app.css')
+    <title>Life Ain't Cringe</title>
+</head>
+
+<body class="min-h-screen font-mono" style="background-color: var(--bg); color: var(--text);">
+
+    <x-moogle-bar />
+
+    <h1 id="cringe-title" class="text-4xl text-center mt-8 mb-6 font-bold" style="color: var(--title);">
+        Life Ain't Cringe... or is it?
+    </h1>
+
+    <div class="flex justify-center px-4">
+        <div class="flex w-full max-w-6xl gap-6">
+            <!-- Top Searches -->
+            <div class="w-2/5 p-4 rounded-xl shadow-lg border"
+                style="background-color: var(--bg-2); border-color: var(--orange);">
+                <h2 id="cringe-total-searches" class="text-2xl mb-4 font-semibold" style="color: var(--orange);">
+                    Total Searches
+                </h2>
+                <div class="text-lg mb-4" style="color: var(--text);">
+                    <p>
+                        {{ $totalSearches }} searches
+                    </p>
+                </div>
+                <h2 id="cringe-top-searches" class="text-2xl mb-4 font-semibold" style="color: var(--orange);">
+                    Top Searches
+                </h2>
+
+                <ul class="space-y-2">
+                    @foreach ($topSearches as $search)
+                        <li>
+                            <a href="{{ route('search_force', ['processed_query' => $search]) }}"
+                                class="transition hover:underline" style="color: var(--text);"
+                                onmouseover="this.style.color='var(--orange)';"
+                                onmouseout="this.style.color='var(--text)';">
+                                - {{ $search }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <!-- Random Article -->
+            <a href="https://{{ $topRankedPage['url'] }}" target="_blank" rel="noopener noreferrer"
+                class="w-3/5 p-4 rounded-xl shadow-lg border transition hover:shadow-xl"
+                style="background-color: var(--bg-2); border-color: var(--url); text-decoration: none;">
+                <div>
+                    <h2 class="text-2xl mb-4 font-semibold" style="color: var(--url);">
+                        {{ $topRankedPage['title'] }}
+                    </h2>
+                    <div class="italic text-sm" style="color: var(--blue);">
+                        {{ $topRankedPage['url'] }}
+                    </div>
+                    <div class="mt-4 text-lg" style="color: var(--text);">
+                        <p>
+                            {{-- use only the first 300 characters of summary text --}}
+                            {{ Str::limit($topRankedPage['summary_text'], 600, '...') }}
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</body>
+
+</html>

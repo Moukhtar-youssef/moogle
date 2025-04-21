@@ -370,4 +370,33 @@ class QuerySearchController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    public function get_top_ranked_page(Request $request)
+    {
+        // Get the top ranked page from pagerank
+        $results = DB::connection('mongodb')->table('pagerank')
+            ->orderBy('rank', 'desc')
+            ->limit(1)
+            ->get();
+        if ($results->count() <= 0) {
+            return response()->json(['error' => 'No results found'], 404);
+        }
+
+        // Fetch the page metadata
+        $page_metadata = DB::connection('mongodb')->table('metadata')
+            ->where('_id', $results[0]->id)
+            ->first();
+        if (!$page_metadata) {
+            return response()->json(['error' => 'Page metadata not found'], 404);
+        }
+
+        // Return the page metadata as an array
+        return [
+            'title' => $page_metadata->title,
+            'url' => $page_metadata->id,
+            'description' => $page_metadata->description,
+            'last_crawled' => $page_metadata->last_crawled,
+            'summary_text' => $page_metadata->summary_text,
+        ];
+    }
 }

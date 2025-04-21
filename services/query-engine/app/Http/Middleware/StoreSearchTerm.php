@@ -29,6 +29,11 @@ class StoreSearchTerm
         // Keep only the top 100 search terms
         Redis::zremrangebyrank('top_searches', 0, -101);
 
+        // Increment the number of total searches performed
+        Redis::incr('total_searches');
+        // Set the expiration time for the key to 1 day (86400 seconds)
+        Redis::expire('total_searches', 86400);
+
         return $next($request);
     }
 }

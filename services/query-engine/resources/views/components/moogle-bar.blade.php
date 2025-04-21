@@ -25,7 +25,7 @@
             <button type="submit" class="btn" id="search-button">
                 Moogle it!
             </button>
-            <button type="button" class="btn">
+            <button type="button" class="btn" onclick="window.location.href='/api/cringe'">
                 Life ain't cringe!
             </button>
         </form>

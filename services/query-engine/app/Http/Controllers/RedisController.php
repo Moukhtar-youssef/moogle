@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
+use App\Http\Controllers\QuerySearchController;
 
 class RedisController extends Controller
 {
@@ -49,6 +50,28 @@ class RedisController extends Controller
 
         return response()->json([
             'searches' => array_values($suggestions)
+        ]);
+    }
+
+    public function cringe(Request $request)
+    {
+        // Fetch the top searches from Redis
+        $topSearches = Redis::zrevrange('top_searches', 0, -1);
+
+        // Fetch the number of searches performed from Redis
+        $totalSearches = Redis::get('total_searches');
+
+        // Call the get_random_page function from QuerySearchController
+        $querySearchController = new QuerySearchController();
+        $topRankedPage = $querySearchController->get_top_ranked_page($request);
+
+        error_log('Top Ranked Page: ' . json_encode($topRankedPage));
+
+        // Return view
+        return view('cringe-results', [
+            'topSearches' => $topSearches,
+            'totalSearches' => $totalSearches,
+            'topRankedPage' => $topRankedPage,
         ]);
     }
 

@@ -28,3 +28,5 @@ Route::get('/search_images_force', [QuerySearchController::class, 'search_images
 Route::get('/count_pages', [QuerySearchController::class, 'count_pages']);
 Route::get('/get_top_searches', [RedisController::class, 'get_top_searches'])->name('get.top.searches');
 Route::get('/get_search_suggestions', [RedisController::class, 'get_search_suggestions'])->name('get.search.suggestions');
+Route::get('/cringe', [RedisController::class, 'cringe'])->name('cringe');
+Route::get('/top_ranked_pages', [QuerySearchController::class, 'get_top_ranked_page'])->name('top_ranked_page');
