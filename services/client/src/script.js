@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchButton = document.getElementById("search-button");
   const cringeButton = document.getElementById("cringe-button");
   const searchBar = document.getElementById("search-bar");
+  let infoContainer;
 
   if (searchButton) {
     searchButton.addEventListener("click", () => {
