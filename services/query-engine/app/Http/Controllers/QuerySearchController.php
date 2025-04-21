@@ -164,7 +164,9 @@ class QuerySearchController extends Controller
                     continue;
                 }
                 $pages = $results->where('id', $word)->first()->pages;
+                error_log('something kamen');
                 foreach ($pages as ['url' => $url, 'weight' => $weight]) {
+                    error_log('something kamen');
                     $urls[$url] = true;
                     if (!isset($wordHashmap[$url])) {
                         $wordHashmap[$url] = [
@@ -186,9 +188,6 @@ class QuerySearchController extends Controller
 
             // Get the pageranks
             $uniqueUrls = array_keys($urls);
-            // $results = DB::connection('mongodb')->table('backlinks')
-            //     ->whereIn('_id', $uniqueUrls)
-            //     ->get();
 
             $pageranks = DB::connection('mongodb')->table('pagerank')
                 ->whereIn('_id', $uniqueUrls)
@@ -198,12 +197,6 @@ class QuerySearchController extends Controller
                 $wordHashmap[$pagerank->id]['pagerank'] = $pagerank->rank;
                 error_log('Pagerank added');
             }
-
-            // foreach ($results as $result) {
-            //     $backlinks = count($result->links);
-            //     $url = $result->id;
-            //     $wordHashmap[$url]['backlinks'] = $backlinks;
-            // }
 
             // Fetch page metadata
             $pages_metadata = DB::connection('mongodb')->table('metadata')

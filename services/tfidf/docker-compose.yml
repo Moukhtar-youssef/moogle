@@ -1,7 +1,7 @@
 services:
   tfidf-service:
     # build: .
-    image: ghcr.io/ionelpopjara/search-engine/tfidf:latest
+    image: ghcr.io/ionelpopjara/moogle/tfidf:latest
     env_file: "variables.env"
     deploy:
       replicas: 1

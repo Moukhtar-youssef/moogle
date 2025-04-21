@@ -26,11 +26,11 @@ RUN docker-php-ext-install mbstring xml
 # Install MongoDB extension
 RUN pecl install mongodb && docker-php-ext-enable mongodb
 
-# Install Redis extension
-RUN composer require predis/predis
-
 # install composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install Redis extension
+RUN composer require predis/predis
 
 # Create user
 RUN useradd -u $uid -ms /bin/bash -g www-data $user

@@ -11,7 +11,7 @@ services:
             replicas: 2 # 2 services for load balancing
         working_dir: /var/www
         volumes:
-            -   ./:/var/www
+            - ./:/var/www
         networks:
             - query-engine-network
     # NGINX
@@ -21,9 +21,9 @@ services:
         ports:
             - 80:80
         depends_on:
-            -   query-engine
+            - query-engine
         volumes:
-            -   ./:/var/www
+            - ./:/var/www
             - ./deployment/nginx/:/etc/nginx/conf.d
         networks:
             - query-engine-network

@@ -1,7 +1,7 @@
 # MOOGLE - The Worst Best Search Engine
 
 ## TODO
-- [ ] Fix pipeline to run only on release tag
+- [x] Fix pipeline to run only on release tag
 - [ ] Check if weight exists in the query engine
 - [ ] Add a favicon
 - [ ] Check URL paths in the backend and frontend
