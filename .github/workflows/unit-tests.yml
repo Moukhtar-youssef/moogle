@@ -1,0 +1,33 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test-spider:
+    name: Test Spider Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.0"
+          cache-dependency-path: services/spider/go.sum
+      - name: Build
+        working-directory: ./services/spider
+        run: go build -v ./cmd/spider/main.go
+      - name: Test
+        working-directory: ./services/spider
+        run: go test -v ./...
+
+  test-indexer:
+    name: Test Indexer Service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Indexer Placeholder
+        run: echo "Indexer Placeholder!"
+  # Add unit-test for the other services once I have them

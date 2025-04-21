@@ -1,4 +1,51 @@
-# MOOGLE (The worst best search engine)
+# MOOGLE - The Worst Best Search Engine
+
+## TODO
+- [ ] Fix pipeline to run only on release tag
+- [ ] Check if weight exists in the query engine
+- [ ] Add a favicon
+- [ ] Check URL paths in the backend and frontend
+- [ ] Store page of the day in Redis
+- [ ] Get a domain
+- [ ] Deploy
+- [ ] Fix the links not updating to purple
+- [ ] Convert Monitoring to Docker Swarm
+
+## For Future
+- [ ] Use stems for words
+- [ ] Check for words that could be hyphened or not (Megaman mega man mega-man).
+- [x] Implement query filter service
+- [ ] Handle weird queries like 'something+something' in the frontend
+
+## Components
+
+- [x] Crawler
+- [x] Indexer
+- [x] Search engine
+- [x] Backlinks
+- [x] TFIDF
+- [x] PageRank
+- [x] Query filter
+- [x] Frontend
+- [ ] Monitoring
+
+## Top Priority
+- [x] Images
+- [x] Make frontend prettier
+- [x] Docker images
+- [x] Scaling up/down
+- [x] Load balancing
+
+
+## Install Redis
+If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
+
+```bash
+sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+sudo docker start redis-stack
+```
+
+SILENCE TEST DRIVEN DEVEVLOPER
 
 ## MESSAGE QUEUES
 - `spider_queue`: ZSET
@@ -88,136 +135,3 @@ This is to display results
     - 3) "description" - string
     - 4) "normalized_url" - string
     - 5) "last_crawled" - timestamp
-
-
-## Probably not doing
-- [ ] Fix the links not updating to purple
-
-## TODO:
-- [x] Check Spider
-- [x] Store TF with Indexer
-- [x] Make another service to store IDF
-- [ ] Check Query Engine
-- [ ] Convert Monitoring to Docker Swarm
-- [ ] Buy a domain and Deploy
-
-
-
-- [ ] Get a domain
-- [ ] Deploy
-- [ ] Update Spider
-    - [ ] Clean up code
-    - [ ] Store favicon icons for preview
-    - [ ] Check how I'm storing backlinks and outlinks
-- [ ] Create a PageRank service
-- [ ] Create a service that takes the data from the crawler and stores the necessary data in mongodb (page and dictionary of words)
-- [ ] Update indexer
-- [x] Add server side rendering again
-- [x] Implement pagination
-- [x] Make placeholder frontend again
-    - [x] Landing page
-    - [x] Results page (this also shows the first 5 images found)
-    - [x] Images tab (just like google search images)
-
-- [x] Load balancing
-- [x] Update indexer
-    - [x] Omit images that are less than 100x100 px
-    - [x] Modify indexer to also account for page url words for the weight
-    - [x] Filename is not being stored by the indexer
-    - [ ] Check for words that could be hyphened or not (Megaman mega man mega-man). Idk how to check this yet.
-        - [ ] Just check all possible combintions like "mega-man" "megaman" "mega" "man"
-- [x] Implement query filter service
-    - [ ] Handle weird queries like 'something+something' in the frontend
-    - [ ] Add search suggeetsions based on most popular searches
-    - [ ] The query filter will also store the 100 most popular search terms
-- [x] Update backend and frontend
-    - [x] Add "more than x amount of entries" at the begining of the client. Like when google said "Soon 2.5 million entries or something"
-    - [x] If that message is not fetch, the server is down so show a message
-- [x] Add mongodb support
-- [x] Refactor crawler code and normalize the names for the datasets
-- [x] Remove datasets after being crawled: CHECK THIS ONE
-- [x] Wait for message queue to restart when the queue is full
-- [x] Pause the crawlers when there is more than a certain amount of pages in the indexer_queue. Wait until the pages reach <500 or until the monitoring service sends a message
-- [x] Implement mongodb storage
-- [x] Make a monitoring service to scale crawlers dynamically
-- [x] Add images to indexer
-- [x] Ignore .svg and .ico
-- [x] Dockerize the indexer so it can be scaled
-- [x] Update metadata struct in the DB
-    - [x] include url
-- [x] Finish the monitoring service
-- [x] Clean up the codebase
-    - [x] Remove environment variables from code
-- [x] Fix crawler overhead
-    - [x] Normalize urls before pushing
-    - [x] Convert the queue to a set
-    - [x] Use a priority queue based on weights and depth level
-- [x] Set up building pipeline
-- [x] Finish seting up the server
-- [x] Add authentication to the DB
-- [x] Remove cites because it produces duplicated content en.wikipedia.org/wiki/Anime#cite_ref-bbc_43-0o
-- [x] Check for pages encoding
-- [x] Omit pages that are not in english
-- [x] Process text more efficiently so summary text is more readable
-- [x] Setup github pipeline and pass db credentials as secrets
-- [x] If I have time, adding images would be sick
-
-- [x] Update search-engine to use pipelines
-- [x] Try to implement page rank algorithm. But I need to check for inner links or something...
-
-## Components
-
-- [x] Crawler
-- [x] Indexer
-- [x] Search engine
-- [ ] Query filter
-- [x] Frontend
-
-
-## Top Priority
-- [x] Images
-- [x] Make frontend prettier
-- [x] Docker images
-- [x] Scaling up/down
-- [x] Load balancing
-
-    parsedURL, err := url.Parse("https://en.wikipedia.org/wiki/Mega_Man_X")
-
-If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
-
-sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
-
-❯ go run ./cmd/spider/main.go
-Connecting to Redis...
-Successfully connected to Redis!
-Page:
--------------------------------------
-URL: hello.com
-HTML: <h1>WTF</h1>
-Last Crawled: Tue, 04 Mar 2025 20:49:07 CET
-Outgoing Links: 0
-Status Code: 404
-Content Type: text/html
--------------------------------------
-
-Page Hash:
-map[content_type:text/html html:<h1>WTF</h1> last_crawled:<h1>WTF</h1> outgoing_links:[] status_code:404 url:hello.com]
-panic: redis: can't marshal []string (implement encoding.BinaryMarshaler)
-
-goroutine 1 [running]:
-main.main()
-	/home/mults/Development/search-engine/services/spider/cmd/spider/main.go:49 +0x669
-exit status 2
-
-sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
-
-sudo docker start redis-stack
-
-I hate race conditions :(
-
-
-SILENE TEST DRIVEN DEVEVLOPER
-
-
-The main problem that docker solves is hte "It works on my machine"
-
