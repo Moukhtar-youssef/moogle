@@ -12,7 +12,8 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        service: [spider, indexer, backlinks-processor, tfidf, page-rank]
+        service:
+          [spider, indexer, backlinks-processor, tfidf, page-rank, query-engine]
       fail-fast: false
 
     steps:
@@ -46,7 +47,8 @@ jobs:
     needs: build
     strategy:
       matrix:
-        service: [spider, indexer, backlinks-processor, tfidf, page-rank]
+        service:
+          [spider, indexer, backlinks-processor, tfidf, page-rank, query-engine]
       fail-fast: false
     steps:
       - name: Checkout repository

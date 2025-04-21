@@ -135,10 +135,13 @@ class MongoClient:
                                             "cond": {"$ne": ["$$this.url", url]}
                                         }},
                                         # Add the new entry
-                                        [{"url": url, "tf": weight}]
+                                        # Here weight is actually tf-idf but it is not calculated yet
+                                        [{"url": url, "tf": weight, "weight": 0}]
                                     ]
                                 },
-                                "else": [{"url": url, "tf": weight}]
+                                # Here weight is actually tf-idf but it is not calculated yet
+                                # I should change the names
+                                "else": [{"url": url, "tf": weight, "weight": 0}]
                             }
                         }
                     }

@@ -1,8 +1,13 @@
+const backendURL = `https://api.moogle.app/api`;
+// const backendURL = `http://127.0.0.1:8000/api`;
+
 document.addEventListener("DOMContentLoaded", () => {
   const searchButton = document.getElementById("search-button");
   const cringeButton = document.getElementById("cringe-button");
   const searchBar = document.getElementById("search-bar");
   let infoContainer;
+  let formattedInfo;
+  let html;
 
   if (searchButton) {
     searchButton.addEventListener("click", () => {
@@ -36,9 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  console.log(`Pinging backend at ${backendURL}...`);
   // Check if backend is running and fetch number of entries from the DB
-  // http://127.0.0.1:8000/api/count_pages
-  fetch("https://api.moogle.app/api/count_pages")
+  fetch(`${backendURL}/count_pages`)
     .then((res) => res.json())
     .then((data) => {
       if (data.status === "up") {
@@ -53,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
     .catch((error) => {
+      console.error("Error fetching data:", error);
       serverDown();
     });
 
@@ -97,22 +103,18 @@ function getFormattedInfoString(pageCount) {
 async function search(query) {
   try {
     const encodedQuery = encodeURIComponent(query);
-    // console.log(`Query: ${query} | Encoded ${encodedQuery}`);
-
-    // TODO: See how to replace this when it's hosted online
-    // const backendUrl = `http://localhost:8000`;
-    const backendUrl = `https://api.moogle.app`;
-    const requestUrl = `${backendUrl}/api/search?q=${encodedQuery}`;
+    const requestUrl = `${backendURL}/search?q=${encodedQuery}`;
+    console.log(requestUrl);
 
     window.location.href = requestUrl;
   } catch (error) {
-    // console.log(error.message);
+    console.log(error.message);
   }
 }
 
 async function cringe() {
   try {
-    const cringeUrl = `https://api.moogle.app/api/cringe`;
+    const cringeUrl = `${backendURL}/cringe`;
     // const cringeUrl = `http://localhost:8000/api/cringe`;
     window.location.href = cringeUrl;
   } catch (error) {
