@@ -2,6 +2,7 @@ services:
     # Query Engine
     query-engine:
         image: ghcr.io/ionelpopjara/moogle/query-engine:latest
+        # let's see if this works
         # build:
         #     args:
         #         user: query-engine-user
