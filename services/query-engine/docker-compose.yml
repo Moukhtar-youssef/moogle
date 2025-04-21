@@ -1,34 +1,37 @@
 services:
     # Query Engine
     query-engine:
-        image: ghcr.io/ionelpopjara/moogle/query-engine:latest
-        # let's see if this works
-        # build:
-        #     args:
-        #         user: query-engine-user
-        #         uid: 1000
-        #     context: .
-        # image: query-engine-image
+        build:
+            args:
+                user: query-engine-user
+                uid: 1000
+            context: .
+        image: query-engine-image
         deploy:
-            replicas: 2 # 2 services for load balancing
+            replicas: 2
         working_dir: /var/www
         volumes:
             - ./:/var/www
         networks:
             - query-engine-network
-    # NGINX
-    webserver:
-        image: nginx:alpine
-        container_name: webserver_container
+
+    # Caddy
+    caddy:
+        image: caddy:2
+        container_name: caddy_container
+        restart: unless-stopped
         ports:
-            - 80:80
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - ./caddy_data:/data
+            - ./caddy_config:/config
         depends_on:
             - query-engine
-        volumes:
-            - ./:/var/www
-            - ./deployment/nginx/:/etc/nginx/conf.d
         networks:
             - query-engine-network
+
 networks:
     query-engine-network:
         driver: bridge
