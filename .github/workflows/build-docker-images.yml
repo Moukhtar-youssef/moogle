@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [spider, indexer]
+        service: [spider, indexer, backlinks-processor, tfidf, page-rank]
       fail-fast: false
 
     steps:
