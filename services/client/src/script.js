@@ -97,7 +97,7 @@ function getFormattedInfoString(pageCount) {
 async function search(query) {
   try {
     const encodedQuery = encodeURIComponent(query);
-    console.log(`Query: ${query} | Encoded ${encodedQuery}`);
+    // console.log(`Query: ${query} | Encoded ${encodedQuery}`);
 
     // TODO: See how to replace this when it's hosted online
     // const backendUrl = `http://localhost:8000`;
@@ -106,7 +106,7 @@ async function search(query) {
 
     window.location.href = requestUrl;
   } catch (error) {
-    console.log(error.message);
+    // console.log(error.message);
   }
 }
 
@@ -116,6 +116,6 @@ async function cringe() {
     // const cringeUrl = `http://localhost:8000/api/cringe`;
     window.location.href = cringeUrl;
   } catch (error) {
-    console.log(error.message);
+    // console.log(error.message);
   }
 }
