@@ -46,16 +46,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        service:
-          [
-            spider,
-            indexer,
-            backlinks-processor,
-            tfidf,
-            page-rank,
-            monitoring,
-            client,
-          ]
+        service: [spider, indexer, backlinks-processor, tfidf, page-rank]
       fail-fast: false
     steps:
       - name: Checkout repository
