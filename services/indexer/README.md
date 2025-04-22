@@ -1,5 +1,10 @@
 # Indexer
 
+## Things that could be bottlenecks
+- [ ] Loading nlptk, maybe I can just copy the array value since that's the only thing I need
+- [ ] Not performing batches insert in mongo
+- [ ] Too many loops
+- [ ] Language detection
 ## TODO
 
 - [x] Make a dictionary with the word count
@@ -10,3 +15,5 @@
     - [x] If it doesn't exist or the entry was updated, add entry
 - [x] Ignore pages that are not in english
 - [x] Index images
+
+Make a new service for images. Make sure to store the most important keywords of each page in the database. Then I'll fetch for that in the image service.

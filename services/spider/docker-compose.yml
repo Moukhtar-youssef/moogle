@@ -1,7 +1,7 @@
 services:
   spider-service:
-    # build: .
-    image: ghcr.io/ionelpopjara/moogle/spider:latest
+    build: .
+    # image: ghcr.io/ionelpopjara/moogle/spider:latest
     env_file: "variables.env"
     deploy:
       replicas: 1

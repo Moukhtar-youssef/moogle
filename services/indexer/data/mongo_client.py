@@ -38,9 +38,17 @@ class MongoClient:
         if self.client is None:
             logger.error(f'Mongo connection not initialized')
             return None
-
-        res = self.db[collection_name].bulk_write(operations)
-        return res
+        
+        if not operations:
+            logger.warning(f'No operations to perform')
+            return None
+        
+        try:
+            res = self.db[collection_name].bulk_write(operations, ordered=False)
+            return res
+        except Exception as e:
+            logger.error(f'Error performing batch operations: {e}')
+            return None
 
     # --------------------- METADATA ---------------------
     def get_metadata(self, normalized_url: str) -> Optional[Metadata]:
@@ -96,6 +104,22 @@ class MongoClient:
             {"$set": image.to_dict()},
             upsert=True
         )
+    
+    def save_image_operation(self, image: Image) -> UpdateOne:
+        if self.client is None:
+            logger.error(f'Mongo connection not initialized')
+            return None
+
+        return UpdateOne(
+            {"_id": image._id},
+            {"$set": image.to_dict()},
+            upsert=True
+        )
+
+    def save_images_bulk(self, save_image_operations: List[UpdateOne]):
+        if not save_image_operations:
+            return
+        return self.perform_batch_operations(save_image_operations, IMAGE_COLLECTION)
 
     # --------------------- IMAGE ---------------------
 

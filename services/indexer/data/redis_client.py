@@ -44,6 +44,20 @@ class RedisClient:
         except Exception as e:
             logger.error(f'Could not fetch from message queue: {e}')
             return None
+    
+    def peek_page(self) -> Optional[str]:
+        try:
+            peeked = self.client.lrange(INDEXER_QUEUE_KEY, -1, -1)
+            if not peeked:
+                logger.warning(f'Could not peek from message queue')
+                return None
+            
+            page_id = peeked[0]
+            logger.debug(f'Peeked from message queue: {page_id}')
+            return page_id
+        except Exception as e:
+            logger.error(f'Could not peek from message queue: {e}')
+            return None
 
     def get_queue_size(self) -> Optional[int]:
         if self.client is None:
