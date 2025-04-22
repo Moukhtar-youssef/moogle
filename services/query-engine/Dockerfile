@@ -24,7 +24,9 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN docker-php-ext-install mbstring xml
 
 # Install MongoDB extension
-RUN pecl install mongodb && docker-php-ext-enable mongodb
+# RUN pecl install mongodb && docker-php-ext-enable mongodb
+# Install MongoDB extension (version 1.x)
+RUN pecl install mongodb-1.21.0 && docker-php-ext-enable mongodb
 
 # install composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -49,6 +51,9 @@ WORKDIR /var/www
 
 # Install frontend dependencies and build assets
 RUN npm install && npm run build
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
 USER $user
 

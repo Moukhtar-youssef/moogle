@@ -1,37 +1,38 @@
 services:
-    # Query Engine
-    query-engine:
-        build:
-            args:
-                user: query-engine-user
-                uid: 1000
-            context: .
+    laravel:
+        build: .
         image: query-engine-image
-        deploy:
-            replicas: 2
         working_dir: /var/www
         volumes:
-            - ./:/var/www
+            # - ./public:/var/www/public # Bind mount to host's ./public directory
+            - /var/www/vendor
+            - /var/www/node_modules
+            - /var/www/public
+        environment:
+            - APP_ENV=local
+            - APP_DEBUG=true
         networks:
-            - query-engine-network
+            - app
 
-    # Caddy
     caddy:
         image: caddy:2
-        container_name: caddy_container
-        restart: unless-stopped
         ports:
             - "80:80"
             - "443:443"
         volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile
-            - ./caddy_data:/data
-            - ./caddy_config:/config
+            - ./public:/srv # Mount public directory to Caddy's web root
+            - caddy_data:/data # This is important for persisting certificates
+            - caddy_config:/config
         depends_on:
-            - query-engine
+            - laravel
         networks:
-            - query-engine-network
+            - app
+
+volumes:
+    caddy_data:
+    caddy_config:
 
 networks:
-    query-engine-network:
+    app:
         driver: bridge
