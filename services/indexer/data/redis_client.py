@@ -165,3 +165,13 @@ class RedisClient:
         if res <= 0:
             logger.error(f'Could not remove {key} from Redis')
     # --------------------- OUTLINKS ---------------------
+
+
+    def push_to_image_indexer_queue(self, normalized_url):
+        if self.client is None:
+            logger.error(f'Redis connection not initialized')
+            return
+
+        # Push the normalized URL to the image indexer queue
+        self.client.lpush(IMAGE_INDEXER_QUEUE_KEY, normalized_url)
+        logger.info(f'Pushed {normalized_url} to image indexer queue')

@@ -75,36 +75,20 @@ if __name__ == "__main__":
 
     # Define thresholds for batch operations
     WORD_OP_THRESHOLD = 1000
-    WORD_IMAGE_OP_THRESHOLD = 1000
-    SAVE_IMAGE_OP_THRESHOLD = 500
 
     # Initialize operation buffers
     word_operations = []
-    word_images_operations = []
-    save_image_operations = []
 
     # Function to perform bulk operations when thresholds are met
     def perform_bulk_operations():
-        global word_operations, word_images_operations, save_image_operations
+        global word_operations
         
         logger.info('Word operations: %d', len(word_operations))
-        logger.info('Word images operations: %d', len(word_images_operations))
-        logger.info('Save image operations: %d', len(save_image_operations))
 
         if len(word_operations) >= WORD_OP_THRESHOLD:
             logger.info('Performing word bulk operations...')
             mongo.add_words_bulk(word_operations)
             word_operations = []
-
-        if len(word_images_operations) >= WORD_IMAGE_OP_THRESHOLD:
-            logger.info('Performing word images bulk operations...')
-            # mongo.add_word_images_bulk(word_images_operations)
-            word_images_operations = []
-
-        if len(save_image_operations) >= SAVE_IMAGE_OP_THRESHOLD:
-            logger.info('Performing save image bulk operations...')
-            # mongo.save_images_bulk(save_image_operations)
-            save_image_operations = []
 
     # INDEXING LOOP
     while running:
@@ -116,6 +100,7 @@ if __name__ == "__main__":
         logger.info(f'Waiting for message queue...')
         
         # Get the next page from the queue
+        # page_id = redis.peek_page()
         page_id = redis.pop_page()
         if not page_id:
             logger.error('Could not fetch data from indexer queue')
@@ -146,14 +131,11 @@ if __name__ == "__main__":
             continue
 
         logger.info(f'Parsed html data for {page_id}...')
-        logger.info(f'HTML data: {html_data}')
+        # logger.info(f'HTML data: {html_data}')
         
         if html_data['language'] != 'en':
             logger.info(f'{page_id} not english. Skipping...')
             continue
-
-        logger.info(f'Storing metadata for {page_id}...')
-        mongo.save_metadata(page, html_data)
 
         text = html_data['text']
         if not text:
@@ -161,92 +143,41 @@ if __name__ == "__main__":
             continue
 
         # Make a dictionary with the words in the text and their frequency
-        logger.info(f'Storing words from {page_id}...')
+        logger.info(f'Counting words from {page_id}...')
         words_weight = Counter(text)
 
-        logger.info(f'Processing images for {page_id}...')
-        # Process images
-        images_urls = redis.get_page_images(normalized_url)
-
-        logger.info(f'Remove images with small sizes {page_id}...')
-        # Iterate through the images and remove the ones that are smaller than 100x100[px]
-        images_urls = [url for url in images_urls if is_valid_image(url)]
-
-        logger.info('Sort words')
-        # Get top words by weight
-        top_words = dict(sorted(words_weight.items(), key=lambda item: item[1], reverse=True)[:MAX_INDEX_WORDS])
+        # Get the top MAX_INDEX_WORDS words
+        keywords = dict(words_weight.most_common(MAX_INDEX_WORDS))
+        
+        logger.info(f'Storing metadata for {page_id}...')
+        # TODO: keywords should also contain the title, description and other meta tags
 
         logger.info('Saving words and images...')
         # Create or update word entries and image entries
-        for word, weight in top_words.items():
-            word_op = mongo.add_url_to_word_operation(word, normalized_url, weight)
-            word_operations.append(word_op)
 
-            for image_url in images_urls:
-                _, file_extension = os.path.splitext(image_url.split('/')[-1])
-                file_extension = file_extension.lstrip('.')
-                if file_extension == "svg" or "icons" in image_url:
-                    continue
+        logger.info(f'Check words in url {normalized_url}...')
 
-                word_image_op = mongo.add_url_to_word_images_operation(word, image_url, weight)
-                word_images_operations.append(word_image_op)
-
-        logger.info('Parse image names and save to mongo...')
-        # Update image hash to include filename
-        # and update word_image to include entries with the words in the file name
-        for image_url in images_urls:
-            # Ignore svg files since they are usually just graphics
-            image_name = image_url.split('/')[-1]
-            file_extension = image_name.split('.')[-1]
-            if file_extension == "svg" or "icons" in image_url:
-                continue
-
-            # Fetch image data from redis
-            image_data = redis.pop_image(image_url)
-
-            if not image_data:
-                continue
-
-            # Update image data with filename
-            image_data.filename = image_name
-
-            # Save image to mongo
-            save_image_op = mongo.save_image_operation(image_data)
-            save_image_operations.append(save_image_op)
-
-            # Get words in image_name
-            words_in_filename = split_name(image_name)
-
-            # Get words from alt
-            words_in_alt = split_name(image_data.alt)
-
-            # Combine them
-            total_words = words_in_filename + words_in_alt
-
-            # Iterate through all the words in the image_name and the alt
-            for word in total_words:
-                # Get the score of the word
-                past_score = words_weight.get(word, 0)
-
-                if past_score == 0:
-                    new_score = 30
-                else:
-                    new_score = past_score * 100
-
-                image_op = mongo.add_url_to_word_images_operation(word, image_url, new_score)
-                word_images_operations.append(image_op)
-
-        logger.info('Check words in url...')
         # Iterate through the url name to add more weight to some words
         words_in_url = split_url(normalized_url)
         for word in words_in_url:
-            past_score = words_weight.get(word, 0)
+            past_score = keywords.get(word, 0)
+            logger.info(f'Word in url: {word} - past score: {past_score}')
 
             # If a word in the url was already in our registry of words we multiply it
             if past_score != 0:
-                new_score = past_score * 100
-                word_op = mongo.add_url_to_word_operation(word, normalized_url, new_score)
-                word_operations.append(word_op)
+                new_score = past_score * 50
+                keywords[word] = new_score
+            else:
+                # If the word is not in our registry we add it with a score of 100
+                keywords[word] = 10
+
+        # Iterate through the images and add them to the word operations
+        for word, weight in keywords.items():
+            word_op = mongo.add_url_to_word_operation(word, normalized_url, weight)
+            word_operations.append(word_op)
+
+        # Save the metdata
+        mongo.save_metadata(page, html_data, keywords)
 
         # Check if any thresholds are exceeded and perform bulk operations
         perform_bulk_operations()
@@ -256,18 +187,15 @@ if __name__ == "__main__":
         mongo.add_words_to_dictionary(wordsSet)
 
         logger.info('Delete page data from redis...')
-        # Delete page_data from redis
         redis.delete_page_data(page_id)
-        # Delete page_images
-        redis.delete_page_images(normalized_url)
 
-        # Save outlinks to mongo
-        outlinks = redis.get_outlinks(normalized_url)
         logger.info('Saving Outlinks...')
+        outlinks = redis.get_outlinks(normalized_url)
         res = mongo.save_outlinks(outlinks)
-        logger.info(f'{res} Outlinks saved!')
-        # Delete outlinks from redis
         redis.delete_outlinks(normalized_url)
+
+        logger.info('Pushing to image indexer queue...')
+        redis.push_to_image_indexer_queue(normalized_url)
 
     logger.info('Shutting down...')
     # Ensure any remaining operations are saved before exit
@@ -275,9 +203,5 @@ if __name__ == "__main__":
     # Save all remaining operations regardless of threshold
     if word_operations:
         mongo.add_words_bulk(word_operations)
-    if word_images_operations:
-        mongo.add_word_images_bulk(word_images_operations)
-    if save_image_operations:
-        mongo.save_images_bulk(save_image_operations)
     
     sys.exit(0)

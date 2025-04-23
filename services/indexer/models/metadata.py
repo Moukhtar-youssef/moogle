@@ -11,6 +11,7 @@ class Metadata:
     description:    str
     summary_text:   str
     last_crawled:   str
+    keywords:       Dict[str, int] = None
 
     @classmethod
     def from_dict(cls, metadata: Dict[str, Any]) -> 'Metadata':

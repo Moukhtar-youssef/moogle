@@ -17,3 +17,5 @@
 - [x] Index images
 
 Make a new service for images. Make sure to store the most important keywords of each page in the database. Then I'll fetch for that in the image service.
+
+Write the word operations in batches using multithreading

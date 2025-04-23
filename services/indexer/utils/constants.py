@@ -4,6 +4,7 @@
 INDEXER_QUEUE_KEY = "pages_queue"
 SIGNAL_QUEUE_KEY = "signal_queue"
 RESUME_CRAWL = "RESUME_CRAWL"
+IMAGE_INDEXER_QUEUE_KEY = "image_indexer_queue"
 
 # Redis Data
 NORMALIZED_URL_PREFIX = "normalized_url"

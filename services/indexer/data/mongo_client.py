@@ -2,7 +2,7 @@ import time
 import logging
 import pymongo
 
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict
 from models.page import Page
 from models.metadata import Metadata
 from models.image import Image
@@ -63,7 +63,7 @@ class MongoClient:
 
         return Metadata.from_dict(result)
 
-    def save_metadata(self, page_data: Page, html_data: Metadata) -> None:
+    def save_metadata(self, page_data: Page, html_data: Metadata, top_words: Dict[str, int]) -> None:
         if self.client is None:
             logger.error(f'Mongo connection not initialized')
             return None
@@ -75,7 +75,8 @@ class MongoClient:
             title=html_data['title'],
             description=html_data['description'],
             summary_text=html_data['summary_text'],
-            last_crawled=page_data.last_crawled
+            last_crawled=page_data.last_crawled,
+            keywords = top_words,
         )
 
         # Save to mongo
