@@ -13,7 +13,15 @@ jobs:
     strategy:
       matrix:
         service:
-          [spider, indexer, backlinks-processor, tfidf, page-rank, query-engine]
+          [
+            spider,
+            indexer,
+            backlinks-processor,
+            tfidf,
+            page-rank,
+            query-engine,
+            image-indexer,
+          ]
       fail-fast: false
 
     steps:
@@ -48,7 +56,15 @@ jobs:
     strategy:
       matrix:
         service:
-          [spider, indexer, backlinks-processor, tfidf, page-rank, query-engine]
+          [
+            spider,
+            indexer,
+            backlinks-processor,
+            tfidf,
+            page-rank,
+            query-engine,
+            image-indexer,
+          ]
       fail-fast: false
     steps:
       - name: Checkout repository
