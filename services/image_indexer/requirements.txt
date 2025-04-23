@@ -1,4 +1,0 @@
-requests
-pymongo
-pillow
-redis

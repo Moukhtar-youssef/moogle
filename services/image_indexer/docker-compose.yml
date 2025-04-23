@@ -1,7 +1,0 @@
-services:
-  image-indexer-service:
-    build: .
-    # image: ghcr.io/ionelpopjara/moogle/image-indexer:latest
-    env_file: "variables.env"
-    deploy:
-      replicas: 1
