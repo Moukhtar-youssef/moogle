@@ -164,9 +164,7 @@ class QuerySearchController extends Controller
                     continue;
                 }
                 $pages = $results->where('id', $word)->first()->pages;
-                error_log('something kamen');
                 foreach ($pages as ['url' => $url, 'weight' => $weight]) {
-                    error_log('something kamen');
                     $urls[$url] = true;
                     if (!isset($wordHashmap[$url])) {
                         $wordHashmap[$url] = [
@@ -372,7 +370,7 @@ class QuerySearchController extends Controller
             ->limit(1)
             ->get();
         if ($results->count() <= 0) {
-            return response()->json(['error' => 'No results found'], 404);
+            return null;
         }
 
         // Fetch the page metadata
@@ -380,7 +378,7 @@ class QuerySearchController extends Controller
             ->where('_id', $results[0]->id)
             ->first();
         if (!$page_metadata) {
-            return response()->json(['error' => 'Page metadata not found'], 404);
+            return null;
         }
 
         // Return the page metadata as an array
@@ -392,4 +390,35 @@ class QuerySearchController extends Controller
             'summary_text' => $page_metadata->summary_text,
         ];
     }
+
+    // Make a function to get a random page from the metadata collection
+    public function get_random_page(Request $request)
+    {
+        $results = DB::connection('mongodb')
+            ->table('metadata')
+            ->raw(function ($collection) {
+                return $collection->aggregate([
+                    ['$sample' => ['size' => 1]]
+                ]);
+            });
+
+        $document = $results->toArray();
+
+        if (empty($document)) {
+            return null;
+        }
+
+        $doc = $document[0];
+
+        // Return the page metadata as an array
+        return [
+            'title' => $doc['title'],
+            'url' => $doc['_id'],
+            'description' => $doc['description'],
+            'last_crawled' => $doc['last_crawled'],
+            'summary_text' => $doc['summary_text'],
+        ];
+    }
+
+
 }

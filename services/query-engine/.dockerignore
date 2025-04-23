@@ -1,0 +1,34 @@
+certbot/
+# Node modules and vendor
+node_modules
+vendor
+
+# Laravel specific
+.env
+.env.*     # ignore all environment files (optional, in case you pass them via Cloud Run env vars)
+storage/*.key
+storage/logs
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/cache/*
+bootstrap/cache/*.php
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+
+# Git stuff
+.git
+.gitignore
+
+# Build cache
+npm-debug.log
+yarn-error.log
+.idea
+.vscode
+
+# Docker files you don’t need inside
+docker-compose.yml
+deployment/
+certbot/
+Caddyfile

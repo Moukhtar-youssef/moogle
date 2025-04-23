@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use App\Http\Controllers\QuerySearchController;
+use Illuminate\Support\Facades\Cache;
 
 class RedisController extends Controller
 {
@@ -55,6 +56,7 @@ class RedisController extends Controller
 
     public function cringe(Request $request)
     {
+
         // Fetch the top searches from Redis
         $topSearches = Redis::zrevrange('top_searches', 0, -1);
 
@@ -63,15 +65,23 @@ class RedisController extends Controller
 
         // Call the get_random_page function from QuerySearchController
         $querySearchController = new QuerySearchController();
-        $topRankedPage = $querySearchController->get_top_ranked_page($request);
 
-        error_log('Top Ranked Page: ' . json_encode($topRankedPage));
+        // Page of the day
+        // Check if the random page is cached in Laravel
+        if (Cache::has('random_page')) {
+            $randomPage = Cache::get('random_page');
+        } else {
+            // If not cached, fetch the random page from Redis
+            $randomPage = $querySearchController->get_random_page($request);
+            // Cache the random page for 24 hours
+            Cache::put('random_page', $randomPage, 1440);
+        }
 
         // Return view
         return view('cringe-results', [
             'topSearches' => $topSearches,
             'totalSearches' => $totalSearches,
-            'topRankedPage' => $topRankedPage,
+            'randomPage' => $randomPage,
         ]);
     }
 

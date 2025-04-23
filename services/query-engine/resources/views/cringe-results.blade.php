@@ -48,24 +48,43 @@
             </div>
 
             <!-- Random Article -->
-            <a href="https://{{ $topRankedPage['url'] }}" target="_blank" rel="noopener noreferrer"
-                class="w-3/5 p-4 rounded-xl shadow-lg border transition hover:shadow-xl"
-                style="background-color: var(--bg-2); border-color: var(--url); text-decoration: none;">
-                <div>
-                    <h2 class="text-2xl mb-4 font-semibold" style="color: var(--url);">
-                        {{ $topRankedPage['title'] }}
-                    </h2>
-                    <div class="italic text-sm" style="color: var(--blue);">
-                        {{ $topRankedPage['url'] }}
+            @if ($randomPage != null)
+                <a href="https://{{ $randomPage['url'] }}" target="_blank" rel="noopener noreferrer"
+                    class="w-3/5 p-4 rounded-xl shadow-lg border transition hover:shadow-xl hover:underline"
+                    style="background-color: var(--bg-2); border-color: var(--url); text-decoration: none;">
+                    <div>
+                        <h2 class="text-2xl mb-4 font-semibold" style="color: var(--url);">
+                            {{ $randomPage['title'] }}
+                        </h2>
+                        <div class="italic text-sm" style="color: var(--blue);">
+                            {{ $randomPage['url'] }}
+                        </div>
+                        <div class="mt-4 text-lg" style="color: var(--text);">
+                            <p>
+                                {{-- use only the first 300 characters of summary text --}}
+                                @if ($randomPage['summary_text'] != null)
+                                    {{-- use Str::limit to limit the summary text to 600 characters --}}
+                                    {{ Str::limit($randomPage['summary_text'], 600, '...') }}
+                                @else
+                                    No summary available.
+                                @endif
+                            </p>
+                        </div>
                     </div>
+                </a>
+            @else
+                <div class="w-3/5 p-4 rounded-xl shadow-lg border"
+                    style="background-color: var(--bg-2); border-color: var(--url);">
+                    <h2 class="text-2xl mb-4 font-semibold" style="color: var(--url);">
+                        No Random Article Available
+                    </h2>
                     <div class="mt-4 text-lg" style="color: var(--text);">
                         <p>
-                            {{-- use only the first 300 characters of summary text --}}
-                            {{ Str::limit($topRankedPage['summary_text'], 600, '...') }}
+                            No random article available.
                         </p>
                     </div>
                 </div>
-            </a>
+            @endif
         </div>
     </div>
 
