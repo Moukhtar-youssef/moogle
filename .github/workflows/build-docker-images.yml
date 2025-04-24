@@ -19,7 +19,6 @@ jobs:
             backlinks-processor,
             tfidf,
             page-rank,
-            query-engine,
             image-indexer,
           ]
       fail-fast: false
@@ -62,7 +61,6 @@ jobs:
             backlinks-processor,
             tfidf,
             page-rank,
-            query-engine,
             image-indexer,
           ]
       fail-fast: false
