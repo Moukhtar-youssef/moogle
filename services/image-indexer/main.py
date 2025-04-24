@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # Define thresholds for batch operations
     WORD_IMAGE_OP_THRESHOLD = 500
-    SAVE_IMAGE_OP_THRESHOLD = 100  # Why did I set this to 10000 :( that was too much, and it was never going to reach it
+    SAVE_IMAGE_OP_THRESHOLD = 00  # Why did I set this to 10000 :( that was too much, and it was never going to reach it
 
     # Initialize operation buffers
     word_images_operations = []
