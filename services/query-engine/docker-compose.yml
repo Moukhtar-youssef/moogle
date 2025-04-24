@@ -4,10 +4,10 @@ services:
         image: query-engine-image
         working_dir: /var/www
         volumes:
-            # - ./public:/var/www/public # Bind mount to host's ./public directory
+            - ./public:/var/www/public # Bind mount to host's ./public directory
             - /var/www/vendor
             - /var/www/node_modules
-            - /var/www/public
+            # - /var/www/public
         environment:
             - APP_ENV=local
             - APP_DEBUG=true
