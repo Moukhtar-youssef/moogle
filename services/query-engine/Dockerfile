@@ -42,12 +42,14 @@ COPY . /var/www
 
 COPY --chown=$user:www-data . /var/www
 
-# Make sure entrypoint script is executable
 COPY docker-entrypoint.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /var/www
+
+RUN chown -R $user:www-data storage bootstrap/cache && \
+    chmod -R ug+rwX storage bootstrap/cache
 
 # Install frontend dependencies and build assets
 RUN npm install && npm run build
