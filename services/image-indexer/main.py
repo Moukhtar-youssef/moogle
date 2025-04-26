@@ -2,14 +2,13 @@ import logging
 import signal
 import sys
 import os
+import time
 
 from utils.constants import *
-from models.image import Image
 from data.redis_client import RedisClient
 from data.mongo_client import MongoClient
 from utils.utils import is_valid_image, split_name
 
-import time
 import os.path
 
 from concurrent.futures import ThreadPoolExecutor
@@ -29,6 +28,12 @@ def handle_exit(signum, frame):
     global running
     logger.info("Termination signal received - shutting down...")
     running = False
+
+    # Perform final bulk operations regardless of the threshold
+    logger.info("Performing final bulk operations...")
+    mongo.create_word_images_bulk(create_word_images_entry_operations)
+    mongo.create_images_bulk(create_images_entry_operations)
+
     sys.exit(0)
 
 
@@ -39,13 +44,13 @@ if __name__ == "__main__":
     # REDIS ENV VARIABLES
     redis_host = os.getenv("REDIS_HOST", "localhost")
     redis_port = int(os.getenv("REDIS_PORT", 6379))
-    redis_password = os.getenv("REDIS_PASSWORD", None)
+    redis_password = os.getenv("REDIS_PASSWORD", "")
     redis_db = int(os.getenv("REDIS_DB", 0))
 
     # MONGO ENV VARIABLES
     mongo_host = os.getenv("MONGO_HOST", "localhost")
     mongo_port = int(os.getenv("MONGO_PORT", 27017))
-    mongo_password = os.getenv("MONGO_PASSWORD", None)
+    mongo_password = os.getenv("MONGO_PASSWORD", "")
     mongo_db = os.getenv("MONGO_DB", "test")
     mongo_username = os.getenv("MONGO_USERNAME", "")
 
@@ -75,34 +80,35 @@ if __name__ == "__main__":
         exit(1)
 
     # Define thresholds for batch operations
-    WORD_IMAGE_OP_THRESHOLD = 500
-    SAVE_IMAGE_OP_THRESHOLD = 00  # Why did I set this to 10000 :( that was too much, and it was never going to reach it
+    WORD_IMAGES_OP_THRESHOLD = 500
+    IMAGES_OP_THRESHOLD = 100
 
     # Initialize operation buffers
-    word_images_operations = []
-    save_image_operations = []
+    create_word_images_entry_operations = []
+    create_images_entry_operations = []
 
     # Function to perform bulk operations when thresholds are met
     def perform_bulk_operations():
-        global word_images_operations, save_image_operations
+        global create_word_images_entry_operations, create_images_entry_operations
 
-        logger.info("Word images operations: %d", len(word_images_operations))
-        logger.info("Save image operations: %d", len(save_image_operations))
+        logger.info(
+            "Word images operations: %d", len(create_word_images_entry_operations)
+        )
+        logger.info("Image operations: %d", len(create_images_entry_operations))
 
-        if len(word_images_operations) >= WORD_IMAGE_OP_THRESHOLD:
+        if len(create_word_images_entry_operations) >= WORD_IMAGES_OP_THRESHOLD:
             logger.info("Performing word images bulk operations...")
-            mongo.add_word_images_bulk(word_images_operations)
-            word_images_operations = []
+            mongo.create_word_images_bulk(create_word_images_entry_operations)
+            create_word_images_entry_operations = []
 
-        if len(save_image_operations) >= SAVE_IMAGE_OP_THRESHOLD:
+        if len(create_images_entry_operations) >= IMAGES_OP_THRESHOLD:
             logger.info("Performing save image bulk operations...")
-            mongo.save_images_bulk(save_image_operations)
-            save_image_operations = []
+            mongo.create_images_bulk(create_images_entry_operations)
+            create_images_entry_operations = []
 
     # INDEXING LOOP
     while running:
         logger.info(f"Checking for message queue...")
-
         # Get the next image from the queue
         page_id = redis.pop_image()
         # page_id = redis.peek_page()
@@ -124,6 +130,8 @@ if __name__ == "__main__":
             logger.warning(f"Could not fetch {page_id} images. Skipping...")
             continue
 
+        logger.info(f"Page images: {page_images}")
+
         if len(page_images) == 0:
             logger.warning(f"No images found for {page_id}. Skipping...")
             # continue
@@ -133,6 +141,7 @@ if __name__ == "__main__":
         logger.info("Processing images...")
 
         def process_image_url(image_url):
+            logger.info(f"Processing {image_url}...")
             if is_valid_image(image_url):
                 # Check file extension
                 _, file_extension = os.path.splitext(image_url.split("/")[-1])
@@ -165,18 +174,23 @@ if __name__ == "__main__":
                         new_score = 30
 
                     # Create operation to add image URL to word images
-                    image_op = mongo.add_url_to_word_images_operation(
+                    # image_op = mongo.add_url_to_word_images_operation(
+                    #     word, image_url, new_score
+                    # )
+                    image_op = mongo.create_word_images_entry_operation(
                         word, image_url, new_score
                     )
                     filename_words_op.append(image_op)
 
                 # Add save image operation to the buffer
-                save_image_op = mongo.save_image_operation(image_data)
+                save_image_op = mongo.create_image_operation(image_data)
                 return (image_url, save_image_op, filename_words_op)
+            else:
+                # If the image is not valid, delete it from Redis
+                logger.info(f"Deleting {image_url} from Redis...")
+                redis.delete_image_data(image_url)
 
-            # If the image is not valid, delete it from Redis
-            redis.delete_image_data(image_url)
-            return None
+                return None
 
         with ThreadPoolExecutor() as executor:
             # First parallel operation - processing image URLs
@@ -194,16 +208,16 @@ if __name__ == "__main__":
                     save_image_ops.append(save_op)
                     filename_words_ops_all.extend(word_ops)
 
-                save_image_operations.extend(save_image_ops)
-                word_images_operations.extend(filename_words_ops_all)
+                create_images_entry_operations.extend(save_image_ops)
+                create_word_images_entry_operations.extend(filename_words_ops_all)
             else:
                 images_urls = []
-            # images_urls = [url for url in results if url is not None]
 
             logger.info(f"Got {len(images_urls)} valid images from Redis...")
 
             # Second parallel operation - processing word-image operations
             # Create a list of all the (word, image_url, weight) combinations
+            logger.info(f"Keywords: {keywords}")
             operations = [
                 (word, image_url, weight)
                 for word, weight in keywords.items()
@@ -214,11 +228,13 @@ if __name__ == "__main__":
             def process_word_image(operation):
                 word, image_url, weight = operation
 
-                return mongo.add_url_to_word_images_operation(word, image_url, weight)
+                return mongo.create_word_images_entry_operation(word, image_url, weight)
+
+                # return mongo.add_url_to_word_images_operation(word, image_url, weight)
 
             # Execute the operations in parallel and wait for completion
             keyword_ops = list(executor.map(process_word_image, operations))
-            word_images_operations.extend(keyword_ops)
+            create_word_images_entry_operations.extend(keyword_ops)
 
         # Check if any thresholds are exceeded and perform bulk operations
         perform_bulk_operations()
@@ -227,13 +243,12 @@ if __name__ == "__main__":
         # It's stupid to pass the mongo_id here but lol
         redis.delete_page_images(mongo_id)
 
-    logger.info("Shutting down...")
-    # Ensure any remaining operations are saved before exit
+    # Save all remaining operations regardless of threshold
     logger.info("Final bulk operations before exit...")
     # Save all remaining operations regardless of threshold
-    if word_images_operations:
-        mongo.add_word_images_bulk(word_images_operations)
-    if save_image_operations:
-        mongo.save_images_bulk(save_image_operations)
+    mongo.create_word_images_bulk(create_word_images_entry_operations)
+    mongo.create_images_bulk(create_images_entry_operations)
+
+    logger.info("Shutting down...")
 
     sys.exit(0)
