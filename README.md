@@ -1,20 +1,9 @@
 # MOOGLE - The Worst Best Search Engine
 
 ## TODO
-- [x] Make a migration script. word and word_images are the biggest bottlenecks in my database.
-    - [x] First test a couple of word entries
-    - [x] Then test a couple of image entries
-    - [ ] Then run queries and see if they work
-    - [ ] Change update one for update many
-- [x] If the migration script is worth it, migrate the data and update services
-- [x] Fix pipeline to run only on release tag
-- [x] Check if weight exists in the query engine
-- [ ] Add a favicon
-- [x] Check URL paths in the backend and frontend
-- [ ] Store page of the day in Redis
-- [x] Get a domain
-- [x] Deploy
-- [ ] Fix the links not updating to purple
+- [ ] Test the flattened database in the query engine
+- [ ] If everything works, rename the database and start the spiders, indexers, and other services to point to this new database
+- [ ] Fix the query engine to use the new database
 
 ## For Future
 - [ ] Use stems for words
