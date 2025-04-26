@@ -4,10 +4,7 @@ import logging
 from utils.constants import *
 
 from typing import Optional, List
-from models.page import Page
-from models.metadata import Metadata
 from models.image import Image
-from models.outlinks import Outlinks
 
 # SETUP LOGGER
 logger = logging.getLogger(__name__)

@@ -1,12 +1,8 @@
-import time
 import logging
 import pymongo
 
-from typing import Optional, List, Set
-from models.page import Page
-from models.metadata import Metadata
+from typing import Optional, List
 from models.image import Image
-from models.outlinks import Outlinks
 
 from pymongo import UpdateOne
 
