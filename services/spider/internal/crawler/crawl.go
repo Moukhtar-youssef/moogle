@@ -117,17 +117,7 @@ func (crawcfg *CrawlerConfig) Crawl(db *database.Database) {
 
             // Update score based on depth
             _ = db.PushURL(rawCurrentLink, score)
-            // if err == nil {
-            //     log.Printf("\tPUSH => %v\n", rawCurrentLink)
-            // }
-            // if err != nil {
-            //     log.Printf("\tError pushing '%v' to the queue: %v\n", rawCurrentLink, err)
-            //     log.Printf("\t\tSkipping...")
-            //     continue
-            // }
         }
-
-        // time.Sleep(1 * time.Second)
     }
 }
 

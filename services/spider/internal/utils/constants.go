@@ -10,6 +10,8 @@ const (
 	MaxScore = 10000
 	MinScore = -1000
 
+	// FIXME: There is a weird "bug" where pages_queue starts appearing in redis even if it is not used in the code.
+	// No idea why :/ and I don't have time to investigate it now.
 	// Message Queues
 	SpiderQueueKey      = "spider_queue"
 	IndexerQueueKey     = "pages_queue"
@@ -17,13 +19,11 @@ const (
 	ResumeCrawl         = "RESUME_CRAWL"
 	MaxIndexerQueueSize = 5000
 
-	// Redis Data
-	NormalizedURLPrefix = "normalized_url"
-	PagePrefix          = "page_data"
-	ImagePrefix         = "image_data"
-	PageImagesPrefix    = "page_images"
-
-	// These ones will be saved by the indexer and the backlinks server
-	BacklinksPrefix = "backlinks"
-	OutlinksPrefix  = "outlinks"
+	// Redis Data: some keys stay in Redis indefinitely, while others are transfer to MongoDB by other services
+	NormalizedURLPrefix = "normalized_url"	// Stays in Redis indefinitely
+	PagePrefix          = "page_data"		// Transferred by the indexer
+	ImagePrefix         = "image_data"		// Transferred by the image indexer
+	PageImagesPrefix    = "page_images"		// Transferred by the image indexer
+	BacklinksPrefix		= "backlinks"		// Transferred by the backlinks processor
+	OutlinksPrefix 		= "outlinks"		// Transferred by the indexer
 )

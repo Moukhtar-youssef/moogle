@@ -6,8 +6,6 @@ import (
 	"os"
 	"sync"
 
-	// "time"
-
 	"github.com/IonelPopJara/search-engine/services/spider/internal/controllers"
 	"github.com/IonelPopJara/search-engine/services/spider/internal/crawler"
 	"github.com/IonelPopJara/search-engine/services/spider/internal/database"
@@ -15,6 +13,7 @@ import (
 	"github.com/IonelPopJara/search-engine/services/spider/internal/utils"
 )
 
+// getEnv retrieves the value of an environment variable or returns a fallback value if not set.
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
@@ -25,22 +24,16 @@ func getEnv(key, fallback string) string {
 
 func main() {
 	// Parse flags
-	maxConcurrency := flag.Int("max-concurrency", 10, "Maximum number of concurrenet workers")
+	maxConcurrency := flag.Int("max-concurrency", 10, "Maximum number of concurrent workers")
 	maxPages := flag.Int("max-pages", 100, "Maximum number of pages per batch")
-	// startingURL := flag.String("starting-url", "https://en.wikipedia.org/wiki/Kamen_Rider", "Starting URL for this spider")
-
-	// Print number of pages
-	log.Printf("Max pages: %d\n", *maxPages)
-
-	// Print indexer queue size
-	log.Printf("Utils.MaxIndexerQueueSize: %d\n", utils.MaxIndexerQueueSize)
 	flag.Parse()
 
-	// Retrive environment variables
+	// Retrieve environment variables
 	redisHost := getEnv("REDIS_HOST", "localhost")
 	redisPort := getEnv("REDIS_PORT", "6379")
 	redisPassword := getEnv("REDIS_PASSWORD", "")
 	redisDB := getEnv("REDIS_DB", "0")
+
 	startingURL := getEnv("STARTING_URL", "https://en.wikipedia.org/wiki/Kamen_Rider")
 
 	// Connect to Redis
@@ -52,13 +45,8 @@ func main() {
 	}
 
 	// Add an entry to the message queue with score 0 (high priority)
-	// PushURL also creates a lookup entry
 	db.PushURL(startingURL, 0)
-
 	log.Printf("PUSH %v\n", startingURL)
-
-	// Sleep
-	// time.Sleep(10 * time.Second)
 
 	// Instantiate controllers
 	pageController := controllers.NewPageController(db)
@@ -79,7 +67,6 @@ func main() {
 
 	// Infinite loop to crawl the web in batches
 	for {
-
 		// Check how busy the indexer queue is
 		log.Printf("Checking number of entries...\n")
 		// If we have reached the maximum number of entries in the spider queue
