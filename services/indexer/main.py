@@ -200,9 +200,6 @@ if __name__ == "__main__":
         mongo.add_words_to_dictionary(wordsSet)
         logger.info(f"Added words to dictionary...")
 
-        # Perform bulk operations if any thresholds are exceeded
-        perform_bulk_operations()
-
         logger.info("Delete page data from redis...")
         redis.delete_page_data(page_id)
         redis.delete_outlinks(normalized_url)
