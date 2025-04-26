@@ -1,15 +1,20 @@
 # MOOGLE - The Worst Best Search Engine
 
 ## TODO
+- [ ] Make a migration script. word and word_images are the biggest bottlenecks in my database.
+    - [ ] First test a couple of word entries
+    - [ ] Then test a couple of image entries
+    - [ ] Then run queries and see if they work
+    - [ ] Change update one for update many
+- [ ] If the migration script is worth it, migrate the data and update services
 - [x] Fix pipeline to run only on release tag
 - [ ] Check if weight exists in the query engine
 - [ ] Add a favicon
 - [ ] Check URL paths in the backend and frontend
 - [ ] Store page of the day in Redis
 - [ ] Get a domain
-- [ ] Deploy
+- [x] Deploy
 - [ ] Fix the links not updating to purple
-- [ ] Convert Monitoring to Docker Swarm
 
 ## For Future
 - [ ] Use stems for words
@@ -135,3 +140,14 @@ This is to display results
     - 3) "description" - string
     - 4) "normalized_url" - string
     - 5) "last_crawled" - timestamp
+
+
+
+
+	// Redis Data: some keys stay in Redis indefinitely, while others are transfer to MongoDB by other services
+	NormalizedURLPrefix = "normalized_url"	// Stays in Redis indefinitely
+	PagePrefix          = "page_data"		// Transferred by the indexer
+	ImagePrefix         = "image_data"		// Transferred by the image indexer
+	PageImagesPrefix    = "page_images"		// Transferred by the image indexer
+	BacklinksPrefix		= "backlinks"		// Transferred by the backlinks processor
+	OutlinksPrefix 		= "outlinks"		// Transferred by the indexer
