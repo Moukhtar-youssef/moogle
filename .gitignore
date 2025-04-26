@@ -213,3 +213,5 @@ dist
 iptrack.txt
 
 variables.env
+
+.vscode
