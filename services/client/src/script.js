@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log(`Pinging backend at ${backendURL}...`);
   // Check if backend is running and fetch number of entries from the DB
-  fetch(`${backendURL}/count_pages`)
+  fetch(`${backendURL}/stats`)
     .then((res) => res.json())
     .then((data) => {
       if (data.status === "up") {
