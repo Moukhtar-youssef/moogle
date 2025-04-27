@@ -15,7 +15,6 @@ func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
-
 	return fallback
 }
 
@@ -23,6 +22,7 @@ func main() {
 	mongoHost := getEnv("MONGO_HOST", "localhost")
 	mongoPassword := getEnv("MONGO_PASSWORD", "")
 	mongoUsername := getEnv("MONGO_USERNAME", "")
+	mongoDatabase := getEnv("MONGO_DB", "test")
 
 	fmt.Println("Page Rank Service!")
 
@@ -47,169 +47,125 @@ func main() {
 	fmt.Println("Successfully connected to MongoDB!")
 
 	// Access the test database
-	db := client.Database("test")
+	db := client.Database(mongoDatabase)
 
-	// Access the outlinks collection
-	coll := db.Collection("outlinks")
+	// Access the outlinks and backlinks collections
+	outlinksColl := db.Collection("outlinks")
+	backlinksColl := db.Collection("backlinks")
 
-	// Get the count of documents in the collection
-	count, err := coll.CountDocuments(context.TODO(), bson.D{})
+	// Get the count of documents in the outlinks collection
+	count, err := outlinksColl.CountDocuments(context.TODO(), bson.D{})
 	if err != nil {
-		panic(fmt.Sprintf("Could not count documents: %v", err))
+		panic(fmt.Sprintf("Could not count documents in outlinks: %v", err))
 	}
 
-	fmt.Printf("Number of documents in the collection: %d\n", count)
-
-	// Iterate over the documents in the collection
-	cursor, err := coll.Find(context.TODO(), bson.D{})
+	backlinks := make(map[string][]string)
+	cursorBacklinks, err := backlinksColl.Find(context.TODO(), bson.D{})
 	if err != nil {
-		panic(fmt.Sprintf("Could not find documents: %v", err))
+		panic(fmt.Sprintf("Could not fetch backlinks: %v", err))
+	}
+	defer cursorBacklinks.Close(context.TODO())
+	for cursorBacklinks.Next(context.TODO()) {
+		var doc struct {
+			ID    string   `bson:"_id"`
+			Links []string `bson:"links"`
+		}
+		if err := cursorBacklinks.Decode(&doc); err != nil {
+			panic(fmt.Sprintf("Could not decode backlink document: %v", err))
+		}
+		backlinks[doc.ID] = doc.Links
 	}
 
-	defer cursor.Close(context.TODO())
+	outlinksCount := make(map[string]int)
+	cursorOutlinks, err := outlinksColl.Find(context.TODO(), bson.D{})
+	if err != nil {
+		panic(fmt.Sprintf("Could not fetch outlinks: %v", err))
+	}
+	defer cursorOutlinks.Close(context.TODO())
+	for cursorOutlinks.Next(context.TODO()) {
+		var doc struct {
+			ID    string   `bson:"_id"`
+			Links []string `bson:"links"`
+		}
+		if err := cursorOutlinks.Decode(&doc); err != nil {
+			panic(fmt.Sprintf("Could not decode outlink document: %v", err))
+		}
+		outlinksCount[doc.ID] = len(doc.Links)
+	}
 
-	// Page rank setup
-	// Create a hash map to hold the page_url and its corresponding page rank
 	pageRank := make(map[string]float64)
-
-	for cursor.Next(context.TODO()) {
-		var result bson.M
-		if err := cursor.Decode(&result); err != nil {
-			panic(fmt.Sprintf("Could not decode document: %v", err))
-		}
-
-		// Get the _id field, this is the page_url
-		url, ok := result["_id"].(string)
-		if !ok {
-			panic("Could not convert _id to string")
-		}
-
-		// Assign a starting page rank value
+	for url := range outlinksCount {
 		pageRank[url] = 1.0 / float64(count)
 	}
 
-	if err := cursor.Err(); err != nil {
-		panic(fmt.Sprintf("Cursor error: %v", err))
-	}
+	fmt.Printf("Total number of URLs: %d\n", count)
 
-	// Print the initial page rank values
-	fmt.Println("Initial Page Rank values:")
-	for url, rank := range pageRank {
-		fmt.Printf("Page URL: %s, Page Rank: %f\n", url, rank)
-	}
-
-	// Page rank algorithm
-	// Set the number of iterations
 	iterations := 10
-	for range iterations {
-		// Create a temporary hash map to hold the new page rank values
+	damping := 0.85
+	for i := 0; i < iterations; i++ {
 		newPageRank := make(map[string]float64)
 
-		// Calculate the new page rank values
-		for url, rank := range pageRank {
-			fmt.Printf("Calculating new page rank for URL: %s | Previous Rank: %v\n", url, rank)
+		for url, _ := range pageRank {
+			var newCumulativeRank float64
 
-			// Get the backlinks for the current URL
-			var backlinksDoc struct {
-				Links []string `bson:"links"`
-			}
-
-			// Get the backlinks for the current URL
-			err := db.Collection("backlinks").FindOne(context.TODO(), bson.D{{Key: "_id", Value: url}}).Decode(&backlinksDoc)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					// No backlinks found for this URL
-					fmt.Printf("No backlinks found for URL %s\n", url)
-				} else {
-					panic(fmt.Sprintf("Could not find backlinks for URL %s: %v", url, err))
-				}
-				continue
-			}
-
-			// Get the count of backlinks
-			backlinksCount := len(backlinksDoc.Links)
-			fmt.Printf("\tFound %d backlinks for URL: %s\n", backlinksCount, url)
-
-			newCumulativeRank := 0.0
-
-			// Iterate over the backlinks and calculate the new page rank
-			for _, backlink := range backlinksDoc.Links {
-				// Get the outlink document for the specified backlink
-				var outlinkDoc struct {
-					Links []string `bson:"links"`
-				}
-
-				// Get the count of outlinks
-				err := db.Collection("outlinks").FindOne(context.TODO(), bson.D{{Key: "_id", Value: backlink}}).Decode(&outlinkDoc)
-				if err != nil {
-					if err == mongo.ErrNoDocuments {
-						// No outlinks found for this URL
-						fmt.Printf("No outlinks found for URL %s\n", backlink)
-					} else {
-						panic(fmt.Sprintf("Could not find outlinks for URL %s: %v", backlink, err))
+			backlinksForUrl, exists := backlinks[url]
+			if exists {
+				for _, backlink := range backlinksForUrl {
+					outlinkCount, ok := outlinksCount[backlink]
+					if ok {
+						backlinkRank, ok := pageRank[backlink]
+						if ok {
+							newCumulativeRank += backlinkRank / float64(outlinkCount)
+						}
 					}
-					continue
 				}
-				outlinksCount := len(outlinkDoc.Links)
-				// fmt.Printf("\t\tFound %d outlinks for URL: %s\n", outlinksCount, backlink)
-
-				// Get the previous page rank value for the backlink
-				backlinkRank, ok := pageRank[backlink]
-				if !ok {
-					// fmt.Printf("No page rank found for backlink %s\n", backlink)
-					continue
-				}
-				// fmt.Printf("\t\t\tBacklink Page Rank: %f\n", backlinkRank)
-
-				newCumulativeRank += backlinkRank / float64(outlinksCount)
 			}
 
-			damping := 0.85
 			newPageRank[url] = (1-damping)/float64(count) + damping*newCumulativeRank
-			fmt.Println()
 		}
 
-		// Update the page rank values
 		pageRank = newPageRank
-
-		// Print the new page rank values
-		fmt.Println("New Page Rank values:")
-		for url, rank := range pageRank {
-			fmt.Printf("Page URL: %s, Page Rank: %f\n", url, rank)
-		}
-		fmt.Println("--------------------------------------------------")
 	}
 
-	// Sort the page rank values by rank
-	// Create a slice to hold the page rank values
-	type PageRank struct {
+	var sortedPageRanks []struct {
 		URL  string
 		Rank float64
 	}
-	var pageRanks []PageRank
 	for url, rank := range pageRank {
-		pageRanks = append(pageRanks, PageRank{URL: url, Rank: rank})
+		sortedPageRanks = append(sortedPageRanks, struct {
+			URL  string
+			Rank float64
+		}{url, rank})
 	}
-	// Sort the page ranks by rank
-	sort.Slice(pageRanks, func(i, j int) bool {
-		return pageRanks[i].Rank > pageRanks[j].Rank
+	sort.Slice(sortedPageRanks, func(i, j int) bool {
+		return sortedPageRanks[i].Rank > sortedPageRanks[j].Rank
 	})
 
-	// Print the sorted page rank values
+	// Print sorted page ranks
 	fmt.Println("Sorted Page Rank values:")
-	for _, pageRank := range pageRanks {
+	for _, pageRank := range sortedPageRanks {
 		fmt.Printf("Page URL: %s, Page Rank: %f\n", pageRank.URL, pageRank.Rank)
 	}
 
-	// Save the page rank values to the database
-	for _, pageRank := range pageRanks {
-		_, err := db.Collection("pagerank").InsertOne(context.TODO(), bson.D{
-			{Key: "_id", Value: pageRank.URL},
-			{Key: "rank", Value: pageRank.Rank},
-		})
+	var bulkOps []mongo.WriteModel
+	for _, pageRank := range sortedPageRanks {
+		bulkOps = append(bulkOps, mongo.NewUpdateOneModel().
+			SetFilter(bson.D{{Key: "_id", Value: pageRank.URL}}).
+			SetUpdate(bson.D{
+				{Key: "$set", Value: bson.D{
+					{Key: "rank", Value: pageRank.Rank},
+				}},
+			}).
+			SetUpsert(true))
+	}
+
+	// Execute the batch insert
+	if len(bulkOps) > 0 {
+		_, err := db.Collection("pagerank").BulkWrite(context.TODO(), bulkOps)
 		if err != nil {
-			panic(fmt.Sprintf("Could not insert page rank value: %v", err))
+			panic(fmt.Sprintf("Could not batch insert page rank values: %v", err))
 		}
 	}
+
 	fmt.Println("Page rank values saved to the database!")
 }

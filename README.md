@@ -1,9 +1,9 @@
 # MOOGLE - The Worst Best Search Engine
 
 ## TODO
-- [ ] Test the flattened database in the query engine
-- [ ] If everything works, rename the database and start the spiders, indexers, and other services to point to this new database
-- [ ] Fix the query engine to use the new database
+- [ ] Add a favicon
+- [x] Add a redis instance to the docker-compose file
+- [x] Check fuzzy finding and spell correction
 
 ## For Future
 - [ ] Use stems for words
