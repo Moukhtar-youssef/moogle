@@ -57,6 +57,7 @@ class RedisController extends Controller
     public function cringe(Request $request)
     {
 
+        error_log('Cringe function called');
         // Fetch the top searches from Redis
         $topSearches = Redis::zrevrange('top_searches', 0, -1);
 

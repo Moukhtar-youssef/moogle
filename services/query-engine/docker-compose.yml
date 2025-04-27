@@ -4,13 +4,13 @@ services:
         image: query-engine-image
         working_dir: /var/www
         volumes:
-            - ./public:/var/www/public # Bind mount to host's ./public directory
+            - ./public:/var/www/public
             - /var/www/vendor
             - /var/www/node_modules
-            # - /var/www/public
         environment:
             - APP_ENV=local
             - APP_DEBUG=true
+            - REDIS_HOST=redis
         networks:
             - app
 
@@ -21,17 +21,27 @@ services:
             - "443:443"
         volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile
-            - ./public:/srv # Mount public directory to Caddy's web root
-            - caddy_data:/data # This is important for persisting certificates
+            - ./public:/srv
+            - caddy_data:/data
             - caddy_config:/config
         depends_on:
             - laravel
         networks:
             - app
 
+    redis:
+        image: redis:7
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - app
+
 volumes:
     caddy_data:
     caddy_config:
+    redis_data:
 
 networks:
     app:

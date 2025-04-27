@@ -17,7 +17,10 @@ class StoreSearchTerm
     public function handle(Request $request, Closure $next): Response
     {
         // Store the search term in Redis:
-        $searchTerm = $request->get('processed_query');
+        $searchTerm = $request->get('processedQuery');
+
+        error_log('StoreSearchTerm middleware called');
+        error_log('Search term: ' . $searchTerm);
 
         if (empty($searchTerm)) {
             return $next($request);

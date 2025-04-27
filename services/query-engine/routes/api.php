@@ -9,23 +9,15 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\QuerySearchController;
 use App\Http\Controllers\RedisController;
 
-// Route::get('/test-mongo', function (Request $request) {
-//     $connection = DB::connection('mongodb');
-//     $msg = 'MongoDB is online!';
-//     try {
-//         $connection->getMongoClient()->selectDatabase('test')->command(['ping' => 1]);
-//     } catch (\Exception $e) {
-//         $msg = 'Mongo is not online. Error: ' . $e->getMessage();
-//     }
-
-//     return ['msg' => $msg];
-// });
-
 Route::get('/search', [QuerySearchController::class, 'search'])->middleware([FuzzySearch::class, StoreSearchTerm::class]);
+Route::get('/search_images', [QuerySearchController::class, 'search_images']);
+Route::get('/dictionary', [QuerySearchController::class, 'get_dictionary'])->name('get.dictionary');
+// Route::get('/search_images', [QuerySearchController::class, 'search_images'])->middleware(FuzzySearch::class);
+// Route::get('/search', [QuerySearchController::class, 'search'])->middleware([FuzzySearch::class, StoreSearchTerm::class]);
+// Route::get('/search2', [QuerySearchController::class, 'search2']);
 Route::get('/search_force', [QuerySearchController::class, 'search'])->name('search_force');
-Route::get('/search_images', [QuerySearchController::class, 'search_images'])->middleware(FuzzySearch::class);
 Route::get('/search_images_force', [QuerySearchController::class, 'search_images'])->name('search_images_force');
-Route::get('/count_pages', [QuerySearchController::class, 'count_pages']);
+Route::get('/stats', [QuerySearchController::class, 'stats'])->name('stats');
 Route::get('/get_top_searches', [RedisController::class, 'get_top_searches'])->name('get.top.searches');
 Route::get('/get_search_suggestions', [RedisController::class, 'get_search_suggestions'])->name('get.search.suggestions');
 Route::get('/cringe', [RedisController::class, 'cringe'])->name('cringe');

@@ -31,25 +31,27 @@
         <div class="pages-container col-span-2">
             @if (count($results) > 0)
                 <ul>
-                    @foreach ($results as $url => $data)
-                        <x-search-result url="{{ $url }}" title="{{ $data['title'] }}"
-                            text="{{ $data['summary_text'] }}" />
+                    @foreach ($results as $res)
+                        <x-search-result url="{{ $res->_id }}" title="{{ $res->title }}"
+                            text="{{ $res->summary_text }}" />
                     @endforeach
                 </ul>
             @else
                 <p>No results found</p>
             @endif
         </div>
-        <div class="images-container flex flex-col items-center">
-            <h2 class="top-images-text"> {{ ucwords($query) }} </h2>
-            @foreach ($topImages as $url => $image)
-                <div class="my-2">
-                    <x-image-container url="{{ $url }}" alt="{{ $image['alt'] }}"
-                        title="{{ $image['page_title'] }}" page="{{ $image['page_url'] }}"
-                        text="{{ $image['page_text'] }}" />
-                </div>
-            @endforeach
-        </div>
+        @if ($page != null && $page == 1)
+            <div class="images-container flex flex-col items-center">
+                <h2 class="top-images-text"> {{ ucwords($query) }} </h2>
+                @foreach ($topImages as $res)
+                    <div class="my-2">
+                        <x-image-container url="{{ $res->_id }}" alt="{{ $res->alt }}"
+                            title="{{ $res->page_title }}" page="{{ $res->page_url }}"
+                            text="{{ $res->page_text }}" />
+                    </div>
+                @endforeach
+            </div>
+        @endif
         <div class="flex flex-col justify-center items-center">
             <x-pagination-bar totalResults="{{ $total }}" />
         </div>

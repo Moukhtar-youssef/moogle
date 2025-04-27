@@ -10,100 +10,133 @@ use Illuminate\Support\Facades\Cache;
 
 class FuzzySearch
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
+        error_log('FuzzySearch middleware called');
         $query = $request->query('q');
-
         if (!$query) {
             return $next($request);
         }
 
         // Split the query string
         $query = str_replace('+', ' ', $query);
-        $query = explode(' ', strtolower($query));
-
+        $queryWords = explode(' ', strtolower($query));
         $processedQuery = [];
-        $dictionary = $this->getDictionaryWords();
+        $hasSuggestions = false;
 
-        // Get the dictionary from MongoDB
         try {
-            // Iterate through all the words in the query
-            foreach ($query as $word) {
-                // Fetch the word from the dictionary in MongoDB
-                $result = DB::connection('mongodb')->table('dictionary')->where('_id', $word)->first();
+            foreach ($queryWords as $word) {
+                if (empty(trim($word))) {
+                    continue;
+                }
+                $suggestion = $this->checkOrSuggestWord($word);
+                error_log('Processing word: ' . $word . ' => ' . ($suggestion ?? 'no suggestion'));
 
-                // If the word is not found, perform a fuzzy search
-                if (!$result) {
-                    $suggestion = $this->fuzzySearch($word, $dictionary);
-                    $processedQuery[] = empty($suggestion) ? $word : $suggestion[0];
+                if ($suggestion && $suggestion !== $word) {
+                    $processedQuery[] = $suggestion;
+                    $hasSuggestions = true;
                 } else {
-                    // Append the word to the processed query
                     $processedQuery[] = $word;
                 }
             }
 
-            $processedQuery = array_unique($processedQuery);
-            $processedQuery = implode(' ', $processedQuery);
+            $processedQueryString = implode(' ', $processedQuery);
+            $request->merge(['processedQuery' => $processedQueryString]);
+            if ($hasSuggestions) {
+                $request->merge(['hasSuggestions' => true]);
+            }
 
-            $request->merge([
-                'processed_query' => $processedQuery,
-                'suggestions' => $processedQuery !== implode(' ', $query) ? true : false
-            ]);
+            error_log('Processed query: ' . $processedQueryString);
 
         } catch (\Exception $e) {
-            $request->merge([
-                'processed_query' => implode(' ', $query),
-                'suggestions' => false
-            ]);
+            \Log::error('Spell check error: ' . $e->getMessage());
         }
 
         return $next($request);
     }
 
-    private function getDictionaryWords()
+    private function checkOrSuggestWord(string $word): ?string
     {
-        if (Cache::has('dictionary')) {
-            return Cache::get('dictionary');
+        $cacheKey = 'spellcheck:' . $word;
+
+        // Check cache first
+        if (Cache::has($cacheKey)) {
+            error_log('Cache hit for word: ' . $word);
+            return Cache::get($cacheKey);
         }
 
-        $words = $this->fetchdictionarywords();
+        try {
+            $collection = DB::connection('mongodb')->table('dictionary');
+            // Check DB directly for exact word
+            $exists = $collection->find($word);
 
-        // Cache the dictionary for 24 hours
-        Cache::put('dictionary', $words, 60 * 24);
-        return $words;
-    }
-
-    private function fetchDictionaryWords()
-    {
-        $words = DB::connection('mongodb')->table('dictionary')->get();
-        return $words;
-    }
-
-    private function fuzzySearch($word, $dictionary)
-    {
-        $suggestions = [];
-        $wordLength = strlen($word);
-
-        foreach ($dictionary as $dictWord) {
-            $dictWord = $dictWord->id;
-            $dictWordLength = strlen($dictWord);
-
-            if ($dictWordLength < $wordLength - 1 || $dictWordLength > $wordLength + 1) {
-                continue;
+            if ($exists) {
+                Cache::put($cacheKey, $word, 3600); // Cache for 1 hour
+                error_log('Word found in DB: ' . $word);
+                return $word;
             }
 
-            $levenshteinDistance = levenshtein($word, $dictWord);
+            error_log('Word not found in DB: ' . $word);
 
-            if ($levenshteinDistance <= 2) {
-                $suggestions[] = $dictWord;
+            $length = strlen($word);
+            $searchLength = $length - 3 > 0 ? $length - 2 : 1;
+            $firstTwoChars = substr($word, 0, $searchLength);
+
+            $cursor = DB::connection('mongodb')
+                ->table('dictionary')
+                ->raw(function ($collection) use ($firstTwoChars, $length) {
+                    return $collection->aggregate([
+                        [
+                            '$match' => [
+                                '_id' => ['$regex' => '^' . $firstTwoChars, '$options' => 'i']
+                            ]
+                        ],
+                        [
+                            '$addFields' => [
+                                'length' => ['$strLenCP' => '$_id']
+                            ]
+                        ],
+                        [
+                            '$match' => [
+                                'length' => ['$gte' => $length - 1, '$lte' => $length + 1]
+                            ]
+                        ]
+                    ]);
+                });
+
+            // Find best match by Levenshtein distance
+            $bestMatch = null;
+            $minDistance = PHP_INT_MAX;
+            $wordLength = strlen($word);
+
+            foreach ($cursor as $document) {
+                $candidate = $document->_id;
+                $candidateLength = strlen($candidate);
+
+                if (abs($candidateLength - $wordLength) > 2) {
+                    continue; // Too different
+                }
+
+                $distance = levenshtein($word, $candidate);
+
+                $maxDistance = $wordLength <= 4 ? 1 : min(2, floor($wordLength / 4));
+                if ($distance <= $maxDistance && $distance < $minDistance) {
+                    $minDistance = $distance;
+                    $bestMatch = $candidate;
+                }
             }
+
+            $finalSuggestion = $bestMatch ?? $word;
+            error_log('Best match found: ' . $finalSuggestion);
+
+            // Save to cache
+            Cache::put($cacheKey, $finalSuggestion, 3600);
+
+            return $finalSuggestion;
+
+        } catch (\Exception $e) {
+            error_log('Suggestion lookup error: ' . $e->getMessage());
+            return $word; // fallback to original word
         }
-
-        return $suggestions;
     }
 }

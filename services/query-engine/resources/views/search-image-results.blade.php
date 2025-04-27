@@ -29,11 +29,10 @@
     <div class="results-images-container">
         @if (count($results) > 0)
             <ul class="flex flex-wrap gap-4">
-                @foreach ($results as $url => $data)
+                @foreach ($results as $res)
                     <li class="m-2 flex-shrink-0 w-1/6">
-                        <x-image-container url="{{ $url }}" alt="{{ $data['alt'] }}"
-                            title="{{ $data['page_title'] }}" page="{{ $data['page_url'] }}"
-                            text="{{ $data['page_text'] }}" />
+                        <x-image-container url="{{ $res->_id }}" alt="{{ $res->alt }}"
+                            title="{{ $res->page_title }}" page="{{ $res->page_url }}" text="{{ $res->page_text }}" />
                     </li>
                 @endforeach
             </ul>

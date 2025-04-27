@@ -5,152 +5,112 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-ini_set('memory_limit', '256M'); // Increase to 256MB or higher
-
 class QuerySearchController extends Controller
 {
-    protected function getTopImages($query, $limit = 4)
+    public function getTopImages($query, $page = 1, $perPage = 5)
     {
-        error_log('Memory usage: ' . memory_get_usage());
-        error_log('Peak memory usage: ' . memory_get_peak_usage());
-
         // Split the query string
         $query = str_replace('+', ' ', $query);
         $words = explode(' ', strtolower($query));
 
-        try {
-            $results = DB::connection('mongodb')->table('word_images')
-                ->raw(function ($collection) use ($words) {
-                    $cursor = $collection->aggregate([
-                        ['$match' => ['_id' => ['$in' => $words]]],
-                        ['$unwind' => '$pages'],
-                        [
-                            '$group' => [
-                                '_id' => '$pages.url',
-                                'total_weight' => ['$sum' => '$pages.weight'],
-                                'count' => ['$sum' => 1],
-                            ]
-                        ],
-                        ['$sort' => ['total_weight' => -1]],
-                    ]);
+        // Use a count aggregation to get total results more efficiently
+        $countPipeline = [
+            ['$match' => ['word' => ['$in' => $words]]],
+            ['$group' => ['_id' => '$url']],
+            ['$count' => 'total']
+        ];
 
-                    return iterator_to_array($cursor);
-                });
+        $countResult = DB::connection('mongodb')
+            ->table('word_images')
+            ->raw(fn($collection) => $collection->aggregate($countPipeline)->toArray());
 
-            // Debug output
-            error_log("Results count: " . count($results));
-            // error_log(json_encode($results));
+        $totalResults = isset($countResult[0]) ? $countResult[0]['total'] : 0;
 
-            $wordImagesHashmap = [];
-            $urls = [];
+        // Aggregation
+        $paginationPipeline = [
+            ['$match' => ['word' => ['$in' => $words]]],
+            [
+                '$group' => [
+                    '_id' => '$url',
+                    'cumWeight' => ['$sum' => '$weight'],
+                    'matchedWords' => ['$addToSet' => '$word'],
+                    'matchCount' => ['$sum' => 1]
+                ]
+            ],
+            ['$sort' => ['matchCount' => -1, 'cumWeight' => -1]],
+            ['$skip' => ($page - 1) * $perPage],
+            ['$limit' => $perPage]
+        ];
 
-            // Rank pages - Fix object/array access issue
-            foreach ($results as $result) {
-                // Check if result is object or array and access accordingly
-                $url = is_object($result) ? $result->_id : $result['_id'];
-                $count = is_object($result) ? $result->count : $result['count'];
-                $total_weight = is_object($result) ? $result->total_weight : $result['total_weight'];
-
-                $urls[$url] = true;
-                if (!isset($wordImagesHashmap[$url])) {
-                    $wordImagesHashmap[$url] = [
-                        'count' => $count,
-                        'weight' => $total_weight,
-                        'rank' => $total_weight * $count,
-                        'alt' => "",
-                        'filename' => "",
-                        'page_url' => "",
-                        'page_title' => "",
-                        'page_text' => "",
-                    ];
+        // Get paginated results
+        $paginatedResults = DB::connection('mongodb')
+            ->table('word_images')
+            ->raw(function ($collection) use ($paginationPipeline) {
+                // Use a cursor to iterate through the results
+                $cursor = $collection->aggregate($paginationPipeline, ['cursor' => ['batchSize' => 20]]);
+                $results = [];
+                foreach ($cursor as $document) {
+                    $results[] = $document;
                 }
-            }
+                return $results;
+            });
 
-            // Continue only if we have results
-            if (empty($wordImagesHashmap)) {
-                error_log("No image mappings found!");
-                return collect();
-            }
+        // Populate the metadata for each URL in the paginated results
+        $urls = array_map(fn($result) => $result['_id'], $paginatedResults);
 
-            $uniqueUrls = array_keys($urls);
-            error_log("Unique URLs count: " . count($uniqueUrls));
+        // Fetch image data
+        $imagesData = DB::connection('mongodb')->table('images')
+            ->whereIn('_id', $urls)
+            ->get();
 
-            // Fetch image data
-            $images_data = DB::connection('mongodb')->table('image')
-                ->whereIn('_id', $uniqueUrls)
-                ->get(); // Using get() instead of cursor() for simplicity
-
-            $unique_page_urls = [];
-            foreach ($images_data as $img_data) {
-                $url = $img_data->_id ?? (is_array($img_data) ? $img_data['_id'] : null);
-                if (!$url || !isset($wordImagesHashmap[$url])) {
-                    continue;
-                }
-
-                $wordImagesHashmap[$url]['alt'] = $img_data->alt ?? $img_data['alt'] ?? '';
-                $wordImagesHashmap[$url]['filename'] = $img_data->filename ?? $img_data['filename'] ?? '';
-                $wordImagesHashmap[$url]['page_url'] = $img_data->page_url ?? $img_data['page_url'] ?? '';
-
-                if (!empty($wordImagesHashmap[$url]['page_url'])) {
-                    $unique_page_urls[$wordImagesHashmap[$url]['page_url']] = true;
-                }
-            }
-
-            $unique_page_urls = array_keys($unique_page_urls);
-            error_log("Unique page URLs count: " . count($unique_page_urls));
-
-            if (!empty($unique_page_urls)) {
-                // Fetch page metadata
-                $pages_metadata = DB::connection('mongodb')->table('metadata')
-                    ->whereIn('_id', $unique_page_urls)
-                    ->get(); // Using get() instead of cursor() for simplicity
-
-                $pageMetadataMap = [];
-                foreach ($pages_metadata as $current_page_metadata) {
-                    $id = $current_page_metadata->_id ?? (is_array($current_page_metadata) ? $current_page_metadata['_id'] : null);
-                    if ($id) {
-                        $pageMetadataMap[$id] = $current_page_metadata;
-                    }
-                }
-
-                foreach ($wordImagesHashmap as $url => &$data) {
-                    if (!empty($data['page_url']) && isset($pageMetadataMap[$data['page_url']])) {
-                        $current_page_metadata = $pageMetadataMap[$data['page_url']];
-
-                        // Handle both object and array access
-                        if (is_object($current_page_metadata)) {
-                            $data['page_title'] = $current_page_metadata->title ?? '';
-                            $summary_text = $current_page_metadata->summary_text ?? '';
-                        } else {
-                            $data['page_title'] = $current_page_metadata['title'] ?? '';
-                            $summary_text = $current_page_metadata['summary_text'] ?? '';
-                        }
-
-                        $data['page_text'] = strlen($summary_text) > 30
-                            ? substr($summary_text, 0, 30) . '...'
-                            : $summary_text;
-                    }
-                }
-            }
-
-            // Sort by rank (which now uses weight * count)
-            $sortedWordImagesResults = collect($wordImagesHashmap)->sortByDesc('rank');
-
-            // Add more debugging
-            error_log("Final results count: " . $sortedWordImagesResults->count());
-
-            // Return the top N images
-            return $sortedWordImagesResults->take($limit);
-        } catch (\Exception $e) {
-            error_log("Exception in getTopImages: " . $e->getMessage());
-            error_log("Trace: " . $e->getTraceAsString());
-            return collect(); // Return an empty collection in case of error
+        // First, reindex the metadata by _id for fast lookup
+        $imageDataByUrl = [];
+        foreach ($imagesData as $data) {
+            $imageDataByUrl[$data->id] = $data;
         }
+
+        // Get all the page urls
+        $pageUrls = [];
+        foreach ($imageDataByUrl as $result) {
+            $pageUrls[] = $result->page_url ?? '';
+        }
+
+        // Fetch all pages metadata
+        $pageMetadataList = DB::connection('mongodb')->table('metadata')
+            ->whereIn('_id', $pageUrls)
+            ->get();
+
+        // Reindex page metadata by _id
+        $pageMetadataByUrl = [];
+        foreach ($pageMetadataList as $meta) {
+            $pageMetadataByUrl[$meta->id] = $meta;
+        }
+
+        // Merge image data into each paginated result
+        foreach ($paginatedResults as &$result) {
+            $imageData = $imageDataByUrl[$result['_id']] ?? null;
+            $result['alt'] = $imageData->alt ?? '';
+            $result['filname'] = $imageData->filename ?? '';
+            $result['page_url'] = $imageData->page_url ?? '';
+            $pageMetadata = $pageMetadataByUrl[$result['page_url']] ?? null;
+            $result['page_title'] = $pageMetadata->title ?? '';
+            // Shorten the summary text to 300 characters
+            $result['page_text'] = '';
+            $length = 100;
+            if (isset($pageMetadata->summary_text)) {
+                $result['page_text'] = strlen($pageMetadata->summary_text) > $length
+                    ? substr($pageMetadata->summary_text, 0, $length) . '...'
+                    : $pageMetadata->summary_text;
+            }
+        }
+
+        return [$paginatedResults, $totalResults];
     }
 
-    public function count_pages(Request $request)
+    public function stats()
     {
         $results = DB::connection('mongodb')->table('metadata')->count();
+
         return response()->json([
             'status' => 'up',
             'pages' => $results,
@@ -159,17 +119,20 @@ class QuerySearchController extends Controller
 
     public function search(Request $request)
     {
-        $suggestions = $request->input('suggestions');
+        $hasSuggestions = $request->input('hasSuggestions');
         $originalQuery = $request->input('q');
-        $query = $request->input('processed_query');
+        $processedQuery = $request->input('processedQuery');
+        $query = $processedQuery;
         if (!$query) {
+            $query = "";
             return view('search-results', [
                 'query' => $query,
                 'results' => [],
                 'total' => 0,
                 'topImages' => [],
-                'suggestions' => $suggestions,
+                'suggestions' => $hasSuggestions,
                 'originalQuery' => $originalQuery,
+                'page' => 0,
             ]);
         }
 
@@ -181,120 +144,121 @@ class QuerySearchController extends Controller
         $perPage = 20;
         $page = $request->input('page', 1); // Default page 1
 
-        try {
-            $results = DB::connection('mongodb')->table('word')
-                ->whereIn('_id', $words)
-                ->get();
-            $wordHashmap = [];
-            $urls = [];
+        // Use a count aggregation to get total results more efficiently
+        $countPipeline = [
+            ['$match' => ['word' => ['$in' => $words]]],
+            ['$group' => ['_id' => '$url']],
+            ['$count' => 'total']
+        ];
 
-            if ($results->count() <= 0) {
-                // Return view for SSR
-                return view('search-results', [
-                    'query' => $query,
-                    'results' => [],
-                    'total' => 0,
-                    'topImages' => [],
-                    'suggestions' => $suggestions,
-                    'originalQuery' => $originalQuery,
-                ]);
-            }
+        $countResult = DB::connection('mongodb')
+            ->table('words')
+            ->raw(fn($collection) => $collection->aggregate($countPipeline)->toArray());
 
-            // Rank pages
-            foreach ($words as $word) {
+        $totalResults = isset($countResult[0]) ? $countResult[0]['total'] : 0;
 
-                if ($results->where('id', $word)->count() <= 0) {
-                    continue;
+        // Aggregation
+        $paginationPipeline = [
+            ['$match' => ['word' => ['$in' => $words]]],
+            [
+                '$group' => [
+                    '_id' => '$url',
+                    'cumWeight' => ['$sum' => '$weight'],
+                    'matchedWords' => ['$addToSet' => '$word'],
+                    'matchCount' => ['$sum' => 1]
+                ]
+            ],
+            ['$sort' => ['matchCount' => -1, 'cumWeight' => -1]],
+            ['$skip' => ($page - 1) * $perPage],
+            ['$limit' => $perPage]
+        ];
+
+        // Get paginated results
+        $paginatedResults = DB::connection('mongodb')
+            ->table('words')
+            ->raw(function ($collection) use ($paginationPipeline) {
+                // Use a cursor to iterate through the results
+                $cursor = $collection->aggregate($paginationPipeline, ['cursor' => ['batchSize' => 20]]);
+                $results = [];
+                foreach ($cursor as $document) {
+                    $results[] = $document;
                 }
-                $pages = $results->where('id', $word)->first()->pages;
+                return $results;
+            });
 
-                foreach ($pages as ['url' => $url, 'weight' => $weight]) {
-                    $urls[$url] = true;
-                    if (!isset($wordHashmap[$url])) {
-                        $wordHashmap[$url] = [
-                            'count' => 0,
-                            'weight' => 0,
-                            'backlinks' => 0,
-                            'rank' => 1,
-                            'description' => "",
-                            'last_crawled' => "",
-                            'summary_text' => "",
-                            'title' => "",
-                        ];
-                    }
+        // Populate the metadata for each URL in the paginated results
+        $urls = array_map(fn($result) => $result['_id'], $paginatedResults);
+        // TODO: Add page rank
+        // Fetch page rank of the urls
+        $pageRank = DB::connection('mongodb')->table('pagerank')
+            ->whereIn('_id', $urls)
+            ->get();
 
-                    $wordHashmap[$url]['count'] += 1;
-                    $wordHashmap[$url]['weight'] += $weight;
-                }
-            }
+        error_log('Page rank: ' . json_encode($pageRank));
 
-            // Get the pageranks
-            $uniqueUrls = array_keys($urls);
+        $metadata = DB::connection('mongodb')->table('metadata')
+            ->whereIn('_id', $urls)
+            ->get();
 
-            $pageranks = DB::connection('mongodb')->table('pagerank')
-                ->whereIn('_id', $uniqueUrls)
-                ->get();
-
-            foreach ($pageranks as $pagerank) {
-                $wordHashmap[$pagerank->id]['pagerank'] = $pagerank->rank;
-                error_log('Pagerank added');
-            }
-
-            // Fetch page metadata
-            $pages_metadata = DB::connection('mongodb')->table('metadata')
-                ->whereIn('_id', $uniqueUrls)
-                ->get();
-
-            /*return $pages_metadata;*/
-            foreach ($uniqueUrls as $url) {
-                // $count = $wordHashmap[$url]['count'];
-                $weight = $wordHashmap[$url]['weight'];
-                // $backlinks = $wordHashmap[$url]['backlinks'];
-                $pagerank = $wordHashmap[$url]['pagerank'] ?? 0.001;
-                $wordHashmap[$url]['rank'] = 1000 * $weight + 10000 * $pagerank;
-
-                // Add page metadata
-                $page_metadata = $pages_metadata->where('id', $url)->first();
-                $wordHashmap[$url]['description'] = $page_metadata->description;
-                $wordHashmap[$url]['last_crawled'] = $page_metadata->last_crawled;
-                $wordHashmap[$url]['summary_text'] = $page_metadata->summary_text;
-                $wordHashmap[$url]['title'] = $page_metadata->title;
-            }
-
-            $sortedWordResults = collect($wordHashmap)->sortByDesc('rank');
-
-            $paginatedResults = $sortedWordResults->forPage($page, $perPage);
-
-            // Get top 4 images if it's the first page
-            $topImages = [];
-            if ($page == 1) {
-                $topImages = $this->getTopImages($query, 4);
-            }
-
-            // Return view for SSR
-            return view('search-results', [
-                'query' => $query,
-                'results' => $paginatedResults,
-                'total' => count($sortedWordResults),
-                'topImages' => $topImages,
-                'suggestions' => $suggestions,
-                'originalQuery' => $originalQuery,
-            ]);
-
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+        // First, reindex the metadata by _id for fast lookup
+        $metadataByUrl = [];
+        foreach ($metadata as $meta) {
+            $metadataByUrl[$meta->id] = $meta;
         }
+
+        // Now, merge metadata into each paginated result
+        foreach ($paginatedResults as &$result) {
+            $resultMetadata = $metadataByUrl[$result['_id']] ?? null;
+            $result['description'] = $resultMetadata->description ?? '';
+            $result['last_crawled'] = $resultMetadata->last_crawled ?? '';
+            $result['summary_text'] = $resultMetadata->summary_text ?? '';
+            $result['title'] = $resultMetadata->title ?? '';
+
+            $result['pagerank'] = $pageRankByUrl[$result['_id']] ?? 0; // Default to 0 if no pagerank found
+
+            // Calculate combined score
+            $tfidfWeight = $result['cumWeight'];
+            $pageRankWeight = $result['pagerank'];
+
+            // Use 60% TF-IDF and 40% PageRank for the combined score
+            $combinedScore = (0.6 * $tfidfWeight) + (0.4 * $pageRankWeight);
+
+            // Add the combined score to the result for sorting purposes
+            $result['combinedScore'] = $combinedScore;
+        }
+
+        // Sort the results by the combined score in descending order
+        usort($paginatedResults, function ($a, $b) {
+            return $b['combinedScore'] <=> $a['combinedScore'];
+        });
+
+        // Get top 5 images if it's the first page
+        $topImages = [];
+        if ($page == 1) {
+            [$topImages, $unused] = $this->getTopImages($query, $page, 5);
+        }
+
+        // Return view for SSR
+        return view('search-results', [
+            'query' => $query,
+            'results' => $paginatedResults,
+            'total' => $totalResults,
+            'topImages' => $topImages,
+            'suggestions' => $hasSuggestions,
+            'originalQuery' => $originalQuery,
+            'page' => $page,
+        ]);
     }
 
     public function search_images(Request $request)
     {
-        error_log('Searching images');
         $suggestions = $request->input('suggestions');
         $originalQuery = $request->input('q');
-        $query = $request->input('processed_query');
-
+        // $query = $request->input('processed_query');
+        $query = $originalQuery;
         if (!$query) {
-            return view('search-results', [
+            $query = "";
+            return view('search-image-results', [
                 'query' => $query,
                 'results' => [],
                 'total' => 0,
@@ -312,166 +276,16 @@ class QuerySearchController extends Controller
         $perPage = 20;
         $page = $request->input('page', 1); // Default page 1
 
-        try {
-            // Add some debugging
-            error_log("Searching for words: " . json_encode($words));
+        [$paginatedResults, $totalResults] = $this->getTopImages($query, $page, $perPage);
 
-            // Option 1: Using the MongoDB aggregation pipeline like in getTopImages
-            $results = DB::connection('mongodb')->table('word_images')
-                ->raw(function ($collection) use ($words) {
-                    $cursor = $collection->aggregate([
-                        ['$match' => ['_id' => ['$in' => $words]]],
-                        ['$unwind' => '$pages'],
-                        [
-                            '$group' => [
-                                '_id' => '$pages.url',
-                                'total_weight' => ['$sum' => '$pages.weight'],
-                                'count' => ['$sum' => 1],
-                            ]
-                        ],
-                        ['$sort' => ['total_weight' => -1]],
-                    ]);
-
-                    // Convert cursor to array
-                    return iterator_to_array($cursor);
-                });
-
-            $wordImagesHashmap = [];
-            $urls = [];
-
-            // Process results - handle both object and array access
-            foreach ($results as $result) {
-                // Check if result is object or array and access accordingly
-                $url = is_object($result) ? $result->_id : $result['_id'];
-                $count = is_object($result) ? $result->count : $result['count'];
-                $total_weight = is_object($result) ? $result->total_weight : $result['total_weight'];
-
-                $urls[$url] = true;
-                if (!isset($wordImagesHashmap[$url])) {
-                    $wordImagesHashmap[$url] = [
-                        'count' => $count,
-                        'weight' => $total_weight,
-                        'rank' => $total_weight, // Use weight for ranking
-                        'alt' => "",
-                        'filename' => "",
-                        'page_url' => "",
-                        'page_title' => "",
-                        'page_text' => "",
-                    ];
-                }
-            }
-
-            // Continue only if we have results
-            if (empty($wordImagesHashmap)) {
-                error_log("No image mappings found");
-                return view('search-image-results', [
-                    'query' => $query,
-                    'results' => [],
-                    'total' => 0,
-                    'topImages' => [],
-                    'suggestions' => $suggestions,
-                    'originalQuery' => $originalQuery,
-                ]);
-            }
-
-            $uniqueUrls = array_keys($urls);
-            error_log("Processing " . count($uniqueUrls) . " unique URLs");
-
-            // Fetch image data
-            $images_data = DB::connection('mongodb')->table('image')
-                ->whereIn('_id', $uniqueUrls)
-                ->select(['_id', 'alt', 'filename', 'page_url'])
-                ->get();
-
-            $unique_page_urls = [];
-            foreach ($images_data as $img_data) {
-                $url = $img_data->id;
-
-                if (!isset($wordImagesHashmap[$url])) {
-                    continue;
-                }
-
-                // Handle both object and array access
-                if (is_object($img_data)) {
-                    $wordImagesHashmap[$url]['alt'] = $img_data->alt ?? '';
-                    $wordImagesHashmap[$url]['filename'] = $img_data->filename ?? '';
-                    $wordImagesHashmap[$url]['page_url'] = $img_data->page_url ?? '';
-                    if (!empty($img_data->page_url)) {
-                        $unique_page_urls[$img_data->page_url] = true;
-                    }
-                } else {
-                    $wordImagesHashmap[$url]['alt'] = $img_data['alt'] ?? '';
-                    $wordImagesHashmap[$url]['filename'] = $img_data['filename'] ?? '';
-                    $wordImagesHashmap[$url]['page_url'] = $img_data['page_url'] ?? '';
-                    if (!empty($img_data['page_url'])) {
-                        $unique_page_urls[$img_data['page_url']] = true;
-                    }
-                }
-            }
-
-            $unique_page_urls = array_keys($unique_page_urls);
-            error_log("Found " . count($unique_page_urls) . " unique page URLs");
-
-            if (!empty($unique_page_urls)) {
-                // Fetch page metadata
-                $pages_metadata = DB::connection('mongodb')->table('metadata')
-                    ->whereIn('_id', $unique_page_urls)
-                    ->select(['_id', 'title', 'summary_text'])
-                    ->get(); // Using get() instead of cursor()
-
-                $pageMetadataMap = [];
-                foreach ($pages_metadata as $current_page_metadata) {
-                    $id = is_object($current_page_metadata) ?
-                        ($current_page_metadata->_id ?? null) :
-                        ($current_page_metadata['_id'] ?? null);
-
-                    if ($id) {
-                        $pageMetadataMap[$id] = $current_page_metadata;
-                    }
-                }
-
-                foreach ($wordImagesHashmap as $url => &$data) {
-                    if (!empty($data['page_url']) && isset($pageMetadataMap[$data['page_url']])) {
-                        $current_page_metadata = $pageMetadataMap[$data['page_url']];
-
-                        // Handle both object and array access
-                        if (is_object($current_page_metadata)) {
-                            $data['page_title'] = $current_page_metadata->title ?? '';
-                            $summary_text = $current_page_metadata->summary_text ?? '';
-                        } else {
-                            $data['page_title'] = $current_page_metadata['title'] ?? '';
-                            $summary_text = $current_page_metadata['summary_text'] ?? '';
-                        }
-
-                        $data['page_text'] = strlen($summary_text) > 30
-                            ? substr($summary_text, 0, 30) . '...'
-                            : $summary_text;
-                    }
-                }
-            }
-
-            // Rank and paginate results
-            $sortedWordImagesResults = collect($wordImagesHashmap)->sortByDesc('weight');
-            $paginatedResults = $sortedWordImagesResults->forPage($page, $perPage);
-
-            // error_log("Returning " . count($paginatedResults) . " results (page $page of " .
-            // ceil(count($sortedWordImagesResults) / $perPage) . ")");
-
-            // Return view for SSR
-            return view('search-image-results', [
-                'query' => $query,
-                'results' => $paginatedResults,
-                'total' => count($sortedWordImagesResults),
-                'topImages' => [],
-                'suggestions' => $suggestions,
-                'originalQuery' => $originalQuery,
-            ]);
-
-        } catch (\Exception $e) {
-            error_log("Exception in search_images: " . $e->getMessage());
-            error_log("Trace: " . $e->getTraceAsString());
-            return redirect()->back()->with('error', $e->getMessage());
-        }
+        return view('search-image-results', [
+            'query' => $query,
+            'results' => $paginatedResults,
+            'total' => $totalResults,
+            'topImages' => [],
+            'suggestions' => $suggestions,
+            'originalQuery' => $originalQuery,
+        ]);
     }
 
     public function get_top_ranked_page(Request $request)
@@ -531,6 +345,19 @@ class QuerySearchController extends Controller
             'summary_text' => $doc['summary_text'],
         ];
     }
+
+    public function get_dictionary()
+    {
+        $results = DB::connection('mongodb')
+            ->table('dictionary')
+            ->pluck('_id'); // ONLY get the word strings
+
+        return response()->json([
+            'status' => 'up',
+            'dictionary' => $results,
+        ]);
+    }
+
 
 
 }

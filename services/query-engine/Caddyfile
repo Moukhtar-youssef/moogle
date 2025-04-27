@@ -1,4 +1,4 @@
-api.moogle.app {
+:80 {
     root * /srv
     php_fastcgi laravel:9000 {
         root /var/www/public
