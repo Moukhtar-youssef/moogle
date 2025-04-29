@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 return (image_url, save_image_op, filename_words_op)
             else:
                 # If the image is not valid, delete it from Redis
-                logger.info(f"Deleting {image_url} from Redis...")
+                logger.info(f"Deleting {image_url} from Redis - Not valid...")
                 redis.delete_image_data(image_url)
 
                 return None

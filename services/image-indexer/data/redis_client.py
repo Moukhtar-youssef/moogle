@@ -30,7 +30,7 @@ class RedisClient:
             self.client.ping()
             logger.info("Successfully connected to redis!")
         except Exception as e:
-            logger.error(f"Failed to connect to redis")
+            logger.error(f"Failed to connect to redis: {e}")
             self.client = None
 
     # --------------------- MESSAGE QUEUE ---------------------
