@@ -33,7 +33,6 @@ func main() {
 	redisPort := getEnv("REDIS_PORT", "6379")
 	redisPassword := getEnv("REDIS_PASSWORD", "")
 	redisDB := getEnv("REDIS_DB", "0")
-
 	startingURL := getEnv("STARTING_URL", "https://en.wikipedia.org/wiki/Kamen_Rider")
 
 	// Connect to Redis
@@ -94,7 +93,7 @@ func main() {
 		}
 
 		log.Printf("Spawning workers...\n")
-		for i := 0; i < crawler.MaxConcurrency; i++ {
+		for range crawler.MaxConcurrency {
 			crawler.Wg.Add(1)
 			go crawler.Crawl(db)
 		}
