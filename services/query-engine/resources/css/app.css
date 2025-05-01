@@ -192,6 +192,35 @@ footer a {
     /* Moves the button down */
 }
 
+.btn-connection {
+    background-color: var(--accent-2);
+    border-left: solid white 0.2rem;
+    border-top: solid white 0.2rem;
+    border-right: solid var(--accent) 0.2rem;
+    border-bottom: solid var(--accent) 0.2rem;
+    box-shadow: 0 0 0 0.2rem black;
+    color: var(--bg);
+    @apply text-sm font-bold drop-shadow-lg px-2;
+}
+
+.btn-connection:hover {
+    cursor: pointer;
+    background-color: var(--accent);
+}
+
+.btn-connection:active {
+    cursor: pointer;
+    background-color: var(--accent);
+    border-left: solid var(--accent) 0.2rem;
+    border-top: solid var(--accent) 0.2rem;
+    border-right: solid var(--accent-2) 0.2rem;
+    border-bottom: solid var(--accent-2) 0.2rem;
+    box-shadow: inset 0.2rem 0.2rem 0 black;
+    /* Moves shadow inside */
+    transform: translate(2px, 2px);
+    /* Moves the button down */
+}
+
 #search-bar {
     background-color: var(--text);
     color: var(--bg);

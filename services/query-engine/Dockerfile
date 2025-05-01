@@ -48,6 +48,10 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 WORKDIR /var/www
 
+# Ensure Laravel cache data directory exists
+RUN mkdir -p storage/framework/cache/data && \
+    chown -R $user:www-data storage/framework/cache
+
 RUN chown -R $user:www-data storage bootstrap/cache && \
     chmod -R ug+rwX storage bootstrap/cache
 

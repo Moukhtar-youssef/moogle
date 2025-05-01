@@ -12,9 +12,6 @@ use App\Http\Controllers\RedisController;
 Route::get('/search', [QuerySearchController::class, 'search'])->middleware([FuzzySearch::class, StoreSearchTerm::class]);
 Route::get('/search_images', [QuerySearchController::class, 'search_images']);
 Route::get('/dictionary', [QuerySearchController::class, 'get_dictionary'])->name('get.dictionary');
-// Route::get('/search_images', [QuerySearchController::class, 'search_images'])->middleware(FuzzySearch::class);
-// Route::get('/search', [QuerySearchController::class, 'search'])->middleware([FuzzySearch::class, StoreSearchTerm::class]);
-// Route::get('/search2', [QuerySearchController::class, 'search2']);
 Route::get('/search_force', [QuerySearchController::class, 'search'])->name('search_force');
 Route::get('/search_images_force', [QuerySearchController::class, 'search_images'])->name('search_images_force');
 Route::get('/stats', [QuerySearchController::class, 'stats'])->name('stats');
@@ -22,6 +19,7 @@ Route::get('/get_top_searches', [RedisController::class, 'get_top_searches'])->n
 Route::get('/get_search_suggestions', [RedisController::class, 'get_search_suggestions'])->name('get.search.suggestions');
 Route::get('/cringe', [RedisController::class, 'cringe'])->name('cringe');
 Route::get('/top_ranked_pages', [QuerySearchController::class, 'get_top_ranked_page'])->name('top_ranked_page');
+Route::get('/page-connections', [QuerySearchController::class, 'get_page_connections'])->name('page_connections');
 
 // Return a secret message when the url is /secret
 Route::get('/secret', function () {
