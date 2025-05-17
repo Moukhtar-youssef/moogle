@@ -1,142 +1,64 @@
 # MOOGLE - The Worst Best Search Engine
 
-## TODO
-- [ ] Add a favicon
-- [x] Add a redis instance to the docker-compose file
-- [x] Check fuzzy finding and spell correction
+Moogle is a search engine designed for educational purposes. Inspired by early 2000s web architecture, Moogle aims to emulate a minimal but functional version of the search engine pipeline: crawling, indexing, and querying the web.
 
-## For Future
-- [ ] Use stems for words
-- [ ] Check for words that could be hyphened or not (Megaman mega man mega-man).
-- [x] Implement query filter service
-- [ ] Handle weird queries like 'something+something' in the frontend
+## Features
+- **Page Searching**: Moogle allows users to search for web pages using keywords. The search results are ranked based on the PageRank algorithm and TF-IDF scoring.
+- **Image Searching**: Moogle can also search for images.
+- **Page Linking**: Moogle provides information about outlinks and backlinks for each page. This is useful for understanding the structure of the web and how pages are connected.
+- **Life Ain't Cringe**: A simple extra page that showcases a random page from the web each day and provides search engine data such as the most searched terms that day.
 
-## Components
+## Architecture
+Moogle is built using a microservices architecture, where each component of the search engine is encapsulated in its own service. This allows for easy scaling and maintenance of individual components. All services are located in the `services` directory, and each service has its own Dockerfile for containerization.
 
-- [x] Crawler
-- [x] Indexer
-- [x] Search engine
-- [x] Backlinks
-- [x] TFIDF
-- [x] PageRank
-- [x] Query filter
-- [x] Frontend
-- [ ] Monitoring
+Moogle uses Redis as a message broker and to store temporary data, and MongoDB as the primary database for storing indexed data.
 
-## Top Priority
-- [x] Images
-- [x] Make frontend prettier
-- [x] Docker images
-- [x] Scaling up/down
-- [x] Load balancing
+### Services
+- **Spider**: Responsible for crawling the web and fetching pages. It uses a simple breadth-first search algorithm to discover new links. It stores information in a Redis database for fast access.
+- **Indexer**: Takes the crawled pages and indexes them for fast retrieval. It uses a simple inverted index structure to map terms to documents. It processes the information the spider stored in Redis and stores the indexed data in a MongoDB database.
+- **Image Indexer**: Indexes images found on the crawled pages. It is essentially a different version of the indexer that focuses on images. It uses a similar inverted index structure to map image URLs to documents.
+- **Backlinks Processor**: Transfers backlinks data from Redis to MongoDB. It is a simple service that runs periodically to ensure that the backlinks data is up-to-date.
+- **Page Rank**: Calculates the PageRank of each page based on the backlinks data. It uses Google's original PageRank algorithm to determine the importance of each page. It stores the PageRank data in MongoDB.
+- **tf-idf**: Calculates the term frequency-inverse document frequency (TF-IDF) for each term in the indexed pages. It uses the TF-IDF algorithm to determine the importance of each term in the context of the entire collection of documents. It stores the TF-IDF data in MongoDB.
+- **Query Engine**: Essentially the backend of the search engine. It takes user queries and retrieves the relevant documents from the indexed data. It uses a simple keyword matching algorithm to find the most relevant documents. It also uses the PageRank and TF-IDF data to rank the results.
+- **Monitoring**: A simple service that monitors and spawns new instances of other services as needed. Currently it is not updated to work with the new architecture, but it is a placeholder for future development.
+- **Client**: A simple web client that allows users to interact with the search engine. It provides a 2000s-inspired interface for searching the web. It uses a simple HTML/CSS/JS stack and communicates with the backend services using REST APIs.
 
-
-## Install Redis
-If you choose to use local Redis we strongly recommend using Docker. If you choose not to use Docker, use the following instructions based on your OS:
+## Repo Structure
 
 ```bash
-sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
-sudo docker start redis-stack
+.
+├── migration/
+├── services/
+│   ├── spider/
+│   ├── indexer/
+│   ├── search-engine/
+│   ├── client/
+│   └── ...
+└── README.md
 ```
 
-SILENCE TEST DRIVEN DEVEVLOPER
+## Workflow
 
-## MESSAGE QUEUES
-- `spider_queue`: ZSET
-- `indexer_queue`: LIST
-- `signal_queue`: LIST
+1. Spiders crawl and pushes raw content into a Redis queue.
+2. Indexer and Image indexer process the content, updating the search index.
+3. Backlinks processor updates the backlinks data in MongoDB.
+4. TF-IDF calculates the term frequency-inverse document frequency for each term in the indexed pages.
+5. Page Rank calculates the PageRank of each page based on the backlinks data.
+6. Query Engine handles incoming queries and returns ranked results.
+7. Client (frontend) lets users enter queries and view results.
 
-## REDIS KEYS
-- `page_data:<normalized_page_url>`: HASH
-    - 1) "html" - string
-    - 2) "last_crawled" - timestamp
-- `page_images:<normalized_page_url>`: SET { `<image_url>` }
-- `image_data:<image_url>`: HASH
-    - 1) "normalized_page_url" - string
-    - 2) "alt" - string
-This one will be used to check if it has been visited before
-- `normalized_url:<normalized_page_url>`: HASH
-    - 1) "raw_url" - string
-    - 2) "visited" - integer (0 = false, 1 = true)
+## Tech Stack
+- **Redis** for a fast in-memory data store and message broker.
+- **MongoDB** for a scalable NoSQL database to store indexed data.
+- **Docker** for containerization of services.
+- **Go** for a high performance spider and page rank calculation.
+- **Python** for the indexer, image indexer, backlinks processor, and tf-idf calculation.
+- **PHP** with **Laravel** for the query engine.
+- **HTML/CSS/JS** for the client-side web interface.
 
-## BOTH
-Outlinks will be saved to storage db in the indexer
-- `backlinks:<normalized_page_url>`: SET { `<normalized_page_url>` }
-A different service will be in charge of saving and updating backlinks
-- `outlinks:<normalized_page_url>`: SET { `<normalized_page_url>` }
-
-
-## NOSQL DATA
-- `word:<word>`: ZSET { `<normalized_page_url>`, SCORE }
-- `word_images:<word>` ZSET { `<normalized_image_url>`, SCORE }
-- `url_metadata:<normalized_page_url>`: HASH
-    - 1) "title" - integer
-    - 2) "summary_text" - string
-    - 3) "description" - string
-    - 4) "normalized_url" - string # I don't remember why I need this but I do
-    - 4) "raw_url" - string # I don't remember why I need this but I do
-    - 5) "last_crawled" - timestamp
-- `image:<image_url>`: HASH
-    - 1) "normalized_page_url" - string
-    - 2) "alt" - string
-    - 3) "keywords" - List[string]
-
-## REDIS KEYS
-- `backlinks:*`: SET { }
-    - set{ "normalized_page_url" }
-- `outlinks:*`: SET
-    - set{ "normalized_page_url" }
-
-Crawl links and push page data to redis
-Also push backlinks, outlinks, page_image
-
-These ones are only for transfering information to the indexer, can be deleted from the db so it's good to keep in redis
-- `page_data:<normalized_page_url>`: HASH
-    - 1) "status_code" - integer
-    - 2) "content_type" - string
-    - 3) "normalized_url" - string
-    - 4) "html" - string
-    - 5) "last_crawled" - timestamp
-- `page_images:<normalized_page_url`: SET
-    - set{ "normalized_image_url" }
-After processing a page, you delete these ones from redis
-
-These ones I can save 
-
-These need to be in storage
-- `image:<image_url>`: HASH
-    - 1) "normalized_page_url" - string
-    - 2) "alt" - string
-- `normalized_url:<normalized_page_url>` STRING
-    - "raw_url"
-
-These should be saved in storage (Page Rank Algorithm)
-- `backlinks:*`: SET
-    - set{ "normalized_page_url" }
-- `outlinks:*`: SET
-    - set{ "normalized_page_url" }
-
-These are given by the indexer (Page Rank Algorithm)
-- `word:<word>`: ZSET
-    - set{ "normalized_page_url", SCORE }
-- `word_images:<word>` ZSET
-    - set{ "normalized_image_url", SCORE }
-
-This is to display results
-- `url_metadata:<normalized_page_url>`: hash
-    - 1) "title" - integer
-    - 2) "summary_text" - string
-    - 3) "description" - string
-    - 4) "normalized_url" - string
-    - 5) "last_crawled" - timestamp
-
-
-
-
-	// Redis Data: some keys stay in Redis indefinitely, while others are transfer to MongoDB by other services
-	NormalizedURLPrefix = "normalized_url"	// Stays in Redis indefinitely
-	PagePrefix          = "page_data"		// Transferred by the indexer
-	ImagePrefix         = "image_data"		// Transferred by the image indexer
-	PageImagesPrefix    = "page_images"		// Transferred by the image indexer
-	BacklinksPrefix		= "backlinks"		// Transferred by the backlinks processor
-	OutlinksPrefix 		= "outlinks"		// Transferred by the indexer
+## Setup
+- Clone the repository by running `git clone https://github.com/IonelPopJara/moogle`.
+- Install Docker and Docker Compose on your machine.
+- Read each service's README file for specific setup instructions.
+- Follow the instructions in the README files to set up each service.
