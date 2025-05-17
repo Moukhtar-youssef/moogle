@@ -15,6 +15,10 @@ Moogle is built using a microservices architecture, where each component of the 
 
 Moogle uses Redis as a message broker and to store temporary data, and MongoDB as the primary database for storing indexed data.
 
+### Architecture Diagram
+The current diagram is not the updated one, but it gives a good overview of the architecture. The updated diagram will be added later.
+![Architecture Diagram](./docs/moogle-full.png)
+
 ### Services
 - **Spider**: Responsible for crawling the web and fetching pages. It uses a simple breadth-first search algorithm to discover new links. It stores information in a Redis database for fast access.
 - **Indexer**: Takes the crawled pages and indexes them for fast retrieval. It uses a simple inverted index structure to map terms to documents. It processes the information the spider stored in Redis and stores the indexed data in a MongoDB database.
