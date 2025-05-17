@@ -62,3 +62,6 @@ Moogle uses Redis as a message broker and to store temporary data, and MongoDB a
 - Install Docker and Docker Compose on your machine.
 - Read each service's README file for specific setup instructions.
 - Follow the instructions in the README files to set up each service.
+
+## Notes
+The documentation is a work in progress. I'll update it once I finish writing my thesis. For now, please refer to the code and comments in each service for more information on how to use them.
