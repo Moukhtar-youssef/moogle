@@ -238,12 +238,8 @@ footer a {
 #search-suggestions {
     background-color: var(--text);
     color: var(--bg);
+    z-index: 1000;
     @apply border border-gray-400 w-140 h-auto;
-
-}
-
-#search-suggestions-list {
-
 }
 
 .search-suggestion {
