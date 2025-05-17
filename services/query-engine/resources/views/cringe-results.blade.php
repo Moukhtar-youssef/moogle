@@ -40,7 +40,7 @@
                         If you'd like to contribute a new feature to replace it, you can go to the
                         related <a href="https://github.com/IonelPopJara/moogle/issues/7" target="_blank"
                             id="github">GitHub
-                            issue</a>
+                            issue</a>.
                     </p>
                     {{-- @foreach ($topSearches as $search)
                         <li>
