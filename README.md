@@ -2,6 +2,8 @@
 
 Moogle is a search engine designed for educational purposes. Inspired by early 2000s web architecture, Moogle aims to emulate a minimal but functional version of the search engine pipeline: crawling, indexing, and querying the web.
 
+You can find the live version of Moogle at [moogle.app](https://moogle.app).
+
 ## Features
 - **Page Searching**: Moogle allows users to search for web pages using keywords. The search results are ranked based on the PageRank algorithm and TF-IDF scoring.
 - **Image Searching**: Moogle can also search for images.
