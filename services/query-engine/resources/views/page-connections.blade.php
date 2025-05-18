@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Graph View</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <style>
         html {
             color: black;
