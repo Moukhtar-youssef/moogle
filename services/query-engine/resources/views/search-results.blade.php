@@ -39,8 +39,13 @@
                 <p>No results found</p>
             @endif
         </div>
+<<<<<<< HEAD
         @if ($page != null && $page == 1)
             <div class="images-container ">
+=======
+        @if ($page != null)
+            <div class="images-container flex flex-col items-center">
+>>>>>>> fixing-moogle-shifting-page-2
                 <h2 class="top-images-text"> {{ ucwords($query) }} </h2>
                 @foreach ($topImages as $res)
                     <div>
