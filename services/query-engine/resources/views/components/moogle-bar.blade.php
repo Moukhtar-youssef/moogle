@@ -7,7 +7,7 @@
             $currentSearchFunction = explode('/', $currentPath)[1];
         @endphp
 
-        <a href="https://moogle.app/" class="logo-container">
+        <a href="http://localhost:5174/" class="logo-container">
             Moogle!
         </a>
 

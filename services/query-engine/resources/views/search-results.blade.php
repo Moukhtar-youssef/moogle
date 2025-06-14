@@ -26,7 +26,6 @@
             </p>
         @endif
     </div>
-
     <div class="results-container">
         <div class="pages-container ">
             @if (count($results) > 0)
